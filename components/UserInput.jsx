@@ -14,23 +14,35 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   const [attachDropdownOpen, setAttachDropdownOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   
   const dropRef = useRef(null);
 
   const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1"];
 
   const handleSend = async () => {
-    if (!message.trim() && !selectedFile) return;
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage && !selectedFile) return;
 
-    const userMsg = { role: "user", content: message };
+    const userMsg = { 
+      role: "user", 
+      content: trimmedMessage,
+      timestamp: Date.now()
+    };
+    
+    const conversationHistory = [...messages, userMsg];
+    
+    // Clear input immediately for better UX
+    setMessage("");
+    setSelectedFile(null);
     
     // Show user message immediately
-    onMessageSent([userMsg]);
+    onMessageSent([userMsg], false);
+    
+    // Show thinking state
+    onMessageSent([], true);
     
     try {
-      // Include previous messages in the context
-      const conversationHistory = [...messages, userMsg];
-      
       const res = await fetch("/api/openrouter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,19 +54,22 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       }
       
       const data = await res.json();
-      const assistantMsg = { role: "assistant", content: data.reply };
+      const assistantMsg = { 
+        role: "assistant", 
+        content: data.reply,
+        timestamp: Date.now() // Add timestamp to ensure uniqueness
+      };
       
-      // Add assistant's response to the conversation
-      onMessageSent([assistantMsg]);
-      
+      // Send the assistant message (this will automatically hide the thinking state)
+      onMessageSent([assistantMsg], false);
     } catch (error) {
-      console.error('Error:', error);
-      const errorMsg = { role: "assistant", content: "Sorry, I encountered an error. Please try again." };
-      onMessageSent([errorMsg]);
+      console.error('Error getting AI response:', error);
+      onMessageSent([{ 
+        role: "assistant", 
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: Date.now()
+      }], false);
     }
-    
-    setMessage("");
-    setSelectedFile(null);
   };
   
 
@@ -75,18 +90,25 @@ export default function UserInput({ onMessageSent, messages = [] }) {
     }
   };
 
-  // useEffect(() => {
-  //   const handleKeyDown = (e) => {
-  //     if (e.key === "Enter" && !e.shiftKey) {
-  //       e.preventDefault();
-  //       handleSend();
-  //     }
-  //   };
-  //   document.addEventListener("keydown", handleKeyDown);
-  //   return () => {
-  //     document.removeEventListener("keydown", handleKeyDown);
-  //   };
-  // }, []);
+  // Handle Enter key press to send message
+  const inputRef = useRef(null);
+  
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    };
+    
+    const input = inputRef.current;
+    if (input) {
+      input.addEventListener('keydown', handleKeyDown);
+      return () => {
+        input.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [message, selectedFile]);
 
   return (
     <div
@@ -116,6 +138,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
 
       {/* Message Input */}
       <input
+        ref={inputRef}
         type="text"
         className="w-full mb-1 text-sm px-2 py-2 outline-none bg-transparent dark:text-white rounded-md"
         placeholder="Type your message..."
@@ -219,7 +242,18 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           </button>
 
           {/* Send Button */}
-          <button onClick={handleSend}>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="focus:outline-none active:opacity-70 p-2 -mr-2"
+            aria-label="Send message"
+          >
             <IoSend size={18} className="text-gray-700 dark:text-white hover:text-black dark:hover:text-gray-300" />
           </button>
         </div>
