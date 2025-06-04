@@ -1,6 +1,8 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function Conversation({ messages = [] }) {
   const endRef = useRef(null);
@@ -14,9 +16,9 @@ export default function Conversation({ messages = [] }) {
 
   return (
     <div className="w-full bg-transparent">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-3xl mx-auto">
         {validMessages.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+          <div className="text-center text-gray-500 dark:text-gray-400 py-4 mt-40">
             Start a conversation with OrbitAI
           </div>
         ) : (
@@ -28,13 +30,15 @@ export default function Conversation({ messages = [] }) {
               >
                 <div
                   className={`
-                    max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap
+                    max-w-[85%] rounded-lg p-2 text-md whitespace-pre-wrap
                     ${msg.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-tr-none'
-                      : 'bg-gray-100 text-black dark:bg-gray-700 dark:text-gray-100 rounded-tl-none'}
+                      ? 'bg-gray-400 dark:bg-gray-600 text-white rounded-tr-none'
+                      : 'text-gray-900 dark:text-gray-100 rounded-tl-none'}
                   `}
                 >
-                  {msg.content}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}

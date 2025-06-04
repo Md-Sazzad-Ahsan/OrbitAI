@@ -98,7 +98,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       }}
       onDragLeave={() => setDragOver(false)}
       className={`border rounded-xl p-3 shadow-sm w-full max-w-4xl mx-auto bg-white dark:bg-gray-900 dark:border-gray-700 ${
-        dragOver ? "border-blue-500 bg-blue-50 dark:bg-blue-900" : ""
+        dragOver ? "border-gray-500 bg-gray-50 dark:bg-gray-900" : ""
       }`}
     >
       {/* File Preview */}
@@ -117,7 +117,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       {/* Message Input */}
       <input
         type="text"
-        className="w-full mb-1 text-sm px-2 py-2 outline-none bg-gray-50 dark:bg-gray-900 dark:text-white rounded-md"
+        className="w-full mb-1 text-sm px-2 py-2 outline-none bg-transparent dark:text-white rounded-md"
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
