@@ -9,7 +9,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
           {!isSidebarOpen && (
             <button
               onClick={toggleSidebar}
-              className="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+              className="text-gray-800 hover:text-gray-600 dark:text-white dark:hover:text-gray-400"
               aria-label="Open Sidebar"
             >
               <RiMenuLine className="h-6 w-6" />

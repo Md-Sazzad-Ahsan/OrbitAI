@@ -1,29 +1,62 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
 import { FiPaperclip } from "react-icons/fi";
 import { IoSend } from "react-icons/io5";
 import { MdImage, MdPictureAsPdf, MdDescription, MdClose } from "react-icons/md";
 import { FaChevronUp, FaChevronDown, FaMicrophone } from "react-icons/fa";
 
-export default function UserInput() {
+export default function UserInput({ onMessageSent, messages = [] }) {
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState("GPT-4.1");
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [attachDropdownOpen, setAttachDropdownOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  
   const dropRef = useRef(null);
 
   const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1"];
 
-  const handleSend = () => {
-    if (message.trim() || selectedFile) {
-      console.log("Sending:", { message, selectedFile, selectedModel });
-      setMessage("");
-      setSelectedFile(null);
+  const handleSend = async () => {
+    if (!message.trim() && !selectedFile) return;
+
+    const userMsg = { role: "user", content: message };
+    
+    // Show user message immediately
+    onMessageSent([userMsg]);
+    
+    try {
+      // Include previous messages in the context
+      const conversationHistory = [...messages, userMsg];
+      
+      const res = await fetch("/api/openrouter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: conversationHistory }),
+      });
+  
+      if (!res.ok) {
+        throw new Error('Failed to get response from AI');
+      }
+      
+      const data = await res.json();
+      const assistantMsg = { role: "assistant", content: data.reply };
+      
+      // Add assistant's response to the conversation
+      onMessageSent([assistantMsg]);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMsg = { role: "assistant", content: "Sorry, I encountered an error. Please try again." };
+      onMessageSent([errorMsg]);
     }
+    
+    setMessage("");
+    setSelectedFile(null);
   };
+  
 
   const handleFileUpload = (e, type) => {
     const file = e.target.files[0];
@@ -41,6 +74,19 @@ export default function UserInput() {
       setSelectedFile({ name: file.name, type: file.type });
     }
   };
+
+  // useEffect(() => {
+  //   const handleKeyDown = (e) => {
+  //     if (e.key === "Enter" && !e.shiftKey) {
+  //       e.preventDefault();
+  //       handleSend();
+  //     }
+  //   };
+  //   document.addEventListener("keydown", handleKeyDown);
+  //   return () => {
+  //     document.removeEventListener("keydown", handleKeyDown);
+  //   };
+  // }, []);
 
   return (
     <div
