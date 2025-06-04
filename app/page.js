@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import UserInput from '@/components/UserInput';
 
 export default function Home() {
   return (
@@ -11,6 +11,7 @@ export default function Home() {
       <p className="text-lg text-center text-gray-600 dark:text-gray-300 mb-8 max-w-2xl">
         Your AI-powered platform for movie and drama recommendations
       </p>
+      <UserInput />
     </div>
   );
 }
