@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { FiPaperclip } from "react-icons/fi";
 import { IoSend } from "react-icons/io5";
-import { MdImage, MdPictureAsPdf, MdDescription, MdClose, MdMic } from "react-icons/md";
-import { FaChevronUp, FaChevronDown } from "react-icons/fa";
+import { MdImage, MdPictureAsPdf, MdDescription, MdClose } from "react-icons/md";
+import { FaChevronUp, FaChevronDown, FaMicrophone } from "react-icons/fa";
 
 export default function UserInput() {
   const [message, setMessage] = useState("");
@@ -15,7 +15,7 @@ export default function UserInput() {
   const [dragOver, setDragOver] = useState(false);
   const dropRef = useRef(null);
 
-  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro"];
+  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1"];
 
   const handleSend = () => {
     if (message.trim() || selectedFile) {
@@ -51,7 +51,7 @@ export default function UserInput() {
         setDragOver(true);
       }}
       onDragLeave={() => setDragOver(false)}
-      className={`border rounded-xl p-3 shadow-sm w-full max-w-xl mx-auto bg-white dark:bg-gray-900 dark:border-gray-700 ${
+      className={`border rounded-xl p-3 shadow-sm w-full max-w-4xl mx-auto bg-white dark:bg-gray-900 dark:border-gray-700 ${
         dragOver ? "border-blue-500 bg-blue-50 dark:bg-blue-900" : ""
       }`}
     >
@@ -71,7 +71,7 @@ export default function UserInput() {
       {/* Message Input */}
       <input
         type="text"
-        className="w-full mb-1 text-sm px-2 py-1 outline-none bg-gray-50 dark:bg-gray-900 dark:text-white rounded-md"
+        className="w-full mb-1 text-sm px-2 py-2 outline-none bg-gray-50 dark:bg-gray-900 dark:text-white rounded-md"
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -79,7 +79,7 @@ export default function UserInput() {
 
       {/* Bottom Row */}
       <div className="flex justify-between items-center pt-2 text-sm flex-wrap gap-2">
-        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300 relative">
+        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
           {/* Attach Dropdown */}
           <div className="relative text-xs">
             <button
@@ -91,7 +91,7 @@ export default function UserInput() {
             >
               <FiPaperclip />
               <span>Attach</span>
-              {attachDropdownOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+              {attachDropdownOpen ? <FaChevronDown size={10} /> : <FaChevronUp size={10} />}
             </button>
 
             {attachDropdownOpen && (
@@ -121,7 +121,7 @@ export default function UserInput() {
           </div>
 
           {/* Image Upload */}
-          <label className="flex items-center gap-1 cursor-pointer text-xs">
+          <label className="flex items-center gap-1 cursor-pointer border border-gray-200 dark:border-gray-600 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs">
             <MdImage />
             <span>Image</span>
             <input
@@ -131,12 +131,9 @@ export default function UserInput() {
               onChange={(e) => handleFileUpload(e, "image")}
             />
           </label>
-        </div>
-
-        {/* Right Controls */}
-        <div className="flex items-center gap-3 ml-auto relative">
+          
           {/* Model Dropdown */}
-          <div className="relative text-xs text-gray-700 dark:text-gray-300">
+          <div className="relative text-xs">
             <button
               onClick={() => {
                 setModelDropdownOpen(!modelDropdownOpen);
@@ -145,11 +142,11 @@ export default function UserInput() {
               className="flex items-center justify-between gap-2 border rounded px-2 py-1 bg-white dark:bg-gray-900 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               {selectedModel}
-              {modelDropdownOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+              {modelDropdownOpen ? <FaChevronDown size={10} /> : <FaChevronUp size={10} />}
             </button>
 
             {modelDropdownOpen && (
-              <div className="absolute bottom-full mb-1 right-0 w-36 bg-white dark:bg-gray-900 border dark:border-gray-600 rounded shadow-md z-10">
+              <div className="absolute bottom-full mb-1 left-0 w-36 bg-white dark:bg-gray-900 border dark:border-gray-600 rounded shadow-md z-10">
                 {models.map((model) => (
                   <div
                     key={model}
@@ -165,10 +162,14 @@ export default function UserInput() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Right Controls */}
+        <div className="flex items-center gap-3 ml-auto relative">
 
           {/* Audio Button */}
           <button className="text-gray-600 dark:text-white hover:text-black dark:hover:text-gray-300">
-            <MdMic size={18} />
+            <FaMicrophone size={18} />
           </button>
 
           {/* Send Button */}
