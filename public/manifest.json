@@ -1,7 +1,7 @@
 {
-  "name": "Glimora - AI Movie & Drama Suggestion Assistant",
-  "short_name": "Glimora",
-  "description": "Get personalized movie and drama recommendations with AI. Share your mood or story and discover what to watch next!",
+  "name": "OrbitAI - Multimodal AI Assistant",
+  "short_name": "OrbitAI",
+  "description": "Use multiple AI models in one place",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
