@@ -74,20 +74,32 @@ export default function Conversation({ messages = [], isThinking = false, isStre
         clearInterval(streamInterval.current);
       }
       
-      // Start streaming the last message
-      let currentChar = 0;
+      // Start streaming the last message with optimized performance
       const content = lastMessage.content || '';
+      const chunkSize = Math.max(1, Math.floor(content.length / 50)); // Dynamic chunk size
+      let currentPos = 0;
       
-      streamInterval.current = setInterval(() => {
-        if (currentChar < content.length) {
-          setStreamingContent(content.substring(0, currentChar + 1));
-          currentChar++;
+      const streamChunk = () => {
+        if (currentPos < content.length) {
+          // Process next chunk
+          currentPos = Math.min(currentPos + chunkSize, content.length);
+          setStreamingContent(content.substring(0, currentPos));
+          
+          // Schedule next chunk with dynamic delay
+          const remaining = content.length - currentPos;
+          const speedFactor = Math.max(0.5, Math.min(1, remaining / 100)); // Faster at the end
+          const delay = Math.max(1, 10 * speedFactor); // 1-10ms delay
+          
+          streamInterval.current = setTimeout(streamChunk, delay);
         } else {
-          clearInterval(streamInterval.current);
+          clearTimeout(streamInterval.current);
           setIsStreaming(false);
           setDisplayedMessages(validMessages);
         }
-      }, 10); // Slightly faster for better UX
+      };
+      
+      // Start streaming
+      streamChunk();
       
       return () => {
         if (streamInterval.current) {

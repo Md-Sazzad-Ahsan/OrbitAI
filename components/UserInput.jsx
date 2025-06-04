@@ -18,7 +18,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   
   const dropRef = useRef(null);
 
-  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1"];
+  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1", "HuggingFace"];
 
   const handleSend = async () => {
     const trimmedMessage = message.trim();
@@ -43,25 +43,81 @@ export default function UserInput({ onMessageSent, messages = [] }) {
     onMessageSent([], true);
     
     try {
-      const res = await fetch("/api/openrouter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: conversationHistory }),
-      });
-  
-      if (!res.ok) {
-        throw new Error('Failed to get response from AI');
+      const isHuggingFace = selectedModel === "HuggingFace";
+      const apiEndpoint = isHuggingFace 
+        ? "/api/huggingface" 
+        : "/api/openrouter";
+
+      if (isHuggingFace) {
+        // Handle streaming for HuggingFace
+        const response = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: conversationHistory }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response from AI');
+        }
+
+        // Create a streaming response
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let assistantMsg = {
+          role: "assistant",
+          content: "",
+          timestamp: Date.now()
+        };
+
+        // Process the stream
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.replace(/^data: /, '');
+              if (data === '[DONE]') {
+                onMessageSent([assistantMsg], false);
+                return;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.reply) {
+                  assistantMsg.content += parsed.reply;
+                  onMessageSent([{ ...assistantMsg }], true);
+                }
+              } catch (e) {
+                console.error('Error parsing chunk:', e);
+              }
+            }
+          }
+        }
+      } else {
+        // Original non-streaming logic for other models
+        const res = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: conversationHistory }),
+        });
+    
+        if (!res.ok) {
+          throw new Error('Failed to get response from AI');
+        }
+        
+        const data = await res.json();
+        const assistantMsg = { 
+          role: "assistant", 
+          content: data.reply,
+          timestamp: Date.now()
+        };
+        
+        onMessageSent([assistantMsg], false);
       }
-      
-      const data = await res.json();
-      const assistantMsg = { 
-        role: "assistant", 
-        content: data.reply,
-        timestamp: Date.now() // Add timestamp to ensure uniqueness
-      };
-      
-      // Send the assistant message (this will automatically hide the thinking state)
-      onMessageSent([assistantMsg], false);
     } catch (error) {
       console.error('Error getting AI response:', error);
       onMessageSent([{ 
