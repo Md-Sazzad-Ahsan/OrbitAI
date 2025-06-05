@@ -14,34 +14,44 @@ export default function Home() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeChatId, setActiveChatId] = useState(chatId);
   
-  // Update activeChatId when URL changes
+  // Update activeChatId and load messages when URL changes
   useEffect(() => {
-    setActiveChatId(chatId);
-  }, [chatId]);
-
-  // Load messages when active conversation changes
-  useEffect(() => {
-    if (!activeChatId) return;
+    if (!chatId) return;
     
-    const loadConversation = () => {
-      const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
+    // Clear current messages immediately when chatId changes
+    setMessages([]);
+    setIsStreaming(false);
+    setIsThinking(false);
+    
+    // Set the new active chat ID
+    setActiveChatId(chatId);
+    
+    // Load the new conversation after a small delay to ensure the UI updates
+    const timer = setTimeout(() => {
+      const conversation = JSON.parse(localStorage.getItem(`conversation_${chatId}`) || '{}');
       if (conversation && conversation.messages) {
         setMessages(conversation.messages);
       } else {
         setMessages([]);
       }
-    };
-
-    // Load the conversation
-    loadConversation();
-
-    // Listen for changes to this specific conversation
+    }, 10);
+    
+    return () => clearTimeout(timer);
+  }, [chatId]);
+  
+  // Listen for changes to the current conversation
+  useEffect(() => {
+    if (!activeChatId) return;
+    
     const handleStorageChange = (e) => {
       if (e.key === `conversation_${activeChatId}` || e.key === 'conversations_list') {
-        loadConversation();
+        const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
+        if (conversation && conversation.messages) {
+          setMessages(conversation.messages);
+        }
       }
     };
-
+    
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [activeChatId]);
@@ -106,15 +116,17 @@ export default function Home() {
   }, [activeChatId, messages.length]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">      
-      <main className="flex-1 overflow-y-auto py-4">
-        <div className="max-w-3xl mx-auto">
+    <div className="relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Main content area with padding for header and input */}
+      <div className="flex-1 overflow-y-auto pt-16 pb-32">
+        <div className="max-w-3xl mx-auto w-full px-2">
           <Conversation messages={messages} isThinking={isThinking} isStreaming={isStreaming} />
         </div>
-      </main>
+      </div>
       
-      <div className="sticky bottom-0">
-        <div className="max-w-3xl mx-auto py-4 bg-gray-50 dark:bg-gray-900">
+      {/* Fixed input at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent pt-4 pb-4 px-4 z-10">
+        <div className="max-w-3xl mx-auto w-full">
           <UserInput 
             onMessageSent={addMessages} 
             messages={messages}

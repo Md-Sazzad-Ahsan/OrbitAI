@@ -18,8 +18,14 @@ export default function Conversation({ messages = [], isThinking = false, isStre
   }, [messages]);
 
   // Handle scrolling to the bottom
-  const scrollToBottom = useCallback(({ behavior = 'auto' } = {}) => {
-    endRef.current?.scrollIntoView({ behavior });
+  const scrollToBottom = useCallback(({ behavior = 'smooth' } = {}) => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({
+        behavior,
+        block: 'end',
+        inline: 'nearest'
+      });
+    }
   }, []);
 
   // Clean up on unmount
@@ -112,56 +118,20 @@ export default function Conversation({ messages = [], isThinking = false, isStre
     }
   }, [messages]); // Removed displayedMessages from dependencies
 
-  // Scroll when messages change or when streaming starts/stops
-  const prevIsStreaming = useRef(isStreaming);
+  // Scroll to bottom when messages change or streaming state changes
   useEffect(() => {
-    // Only scroll if we're not currently streaming or if we just stopped streaming
-    if (!isStreaming) {
-      if (prevIsStreaming.current !== isStreaming) {
-        // Just stopped streaming, do a smooth scroll
-        scrollToBottom({ behavior: 'smooth' });
-      } else {
-        // For other message updates, do an instant scroll
-        scrollToBottom({ behavior: 'auto' });
-      }
-    }
-    prevIsStreaming.current = isStreaming;
-  }, [displayedMessages, isStreaming, scrollToBottom]);
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      scrollToBottom({ behavior: 'smooth' });
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [messages, isStreaming, streamingContent, scrollToBottom]);
   
-  // Handle scrolling during streaming
-  const prevStreamingContent = useRef('');
-  const scrollTimer = useRef(null);
-  
+  // Handle initial scroll when component mounts
   useEffect(() => {
-    if (isStreaming && streamingContent.length > prevStreamingContent.current.length) {
-      // Only update the previous content ref, don't scroll during streaming
-      prevStreamingContent.current = streamingContent;
-    }
-    
-    // Clean up any pending scrolls on unmount
-    return () => {
-      if (scrollTimer.current) {
-        clearTimeout(scrollTimer.current);
-      }
-    };
-  }, [streamingContent, isStreaming]);
-  
-  // Scroll to bottom when streaming starts or stops
-  useEffect(() => {
-    if (scrollTimer.current) {
-      clearTimeout(scrollTimer.current);
-    }
-    
-    scrollTimer.current = setTimeout(() => {
-      scrollToBottom({ behavior: isStreaming ? 'auto' : 'smooth' });
-    }, 50);
-    
-    return () => {
-      if (scrollTimer.current) {
-        clearTimeout(scrollTimer.current);
-      }
-    };
-  }, [isStreaming, scrollToBottom]);
+    scrollToBottom({ behavior: 'auto' });
+  }, [scrollToBottom]);
 
   return (
     <div className="w-full bg-transparent">
@@ -180,13 +150,23 @@ export default function Conversation({ messages = [], isThinking = false, isStre
               >
                 <div
                   className={`
-                    max-w-[85%] rounded-lg p-2 text-md whitespace-pre-wrap
+                    max-w-[95%] rounded-lg py-2 text-md
+                    break-words overflow-x-auto
                     ${msg.role === 'user'
                       ? 'bg-gray-400 dark:bg-gray-600 text-white rounded-tr-none'
                       : 'text-gray-900 dark:text-gray-100 rounded-tl-none'}
                   `}
+                  style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({node, ...props}) => <p className="break-words" {...props} />,
+                      code: ({node, ...props}) => (
+                        <code className="break-words whitespace-pre-wrap" {...props} />
+                      )
+                    }}
+                  >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
@@ -196,7 +176,7 @@ export default function Conversation({ messages = [], isThinking = false, isStre
             {/* Show thinking message while waiting for response */}
             {isThinking && !isStreaming && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-lg p-2 text-md whitespace-pre-wrap text-gray-500 dark:text-gray-400 italic rounded-tl-none">
+                <div className="max-w-[95%] rounded-lg p-2 text-md text-gray-500 dark:text-gray-400 italic rounded-tl-none break-words">
                   Thinking...
                 </div>
               </div>
@@ -205,10 +185,20 @@ export default function Conversation({ messages = [], isThinking = false, isStre
             {/* Show streaming message once content starts */}
             {!isParentStreaming && isStreaming && streamingContent !== '' && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-lg p-2 text-md whitespace-pre-wrap text-gray-900 dark:text-gray-100 rounded-tl-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {streamingContent}
-                  </ReactMarkdown>
+                <div className="max-w-[95%] rounded-lg py-2 text-md text-gray-900 dark:text-gray-100 rounded-tl-none">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({node, ...props}) => <p className="break-words" {...props} />,
+                        code: ({node, ...props}) => (
+                          <code className="break-words whitespace-pre-wrap" {...props} />
+                        )
+                      }}
+                    >
+                      {streamingContent}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             )}

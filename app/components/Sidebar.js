@@ -47,6 +47,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
   const handleSelectChat = (id) => {
     if (onSelectChat) {
       onSelectChat(id);
+      // Update the URL with the new chatId
+      window.history.pushState({}, '', `/?chatId=${id}`);
     }
   };
 

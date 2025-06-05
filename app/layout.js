@@ -5,8 +5,6 @@ import PWAInstaller from '../components/PWAInstaller';
 export const metadata = {
   title: 'OrbitAI',
   description: 'A modern web application',
-  themeColor: '#0a0a0a',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -21,6 +19,14 @@ export const metadata = {
     shortcut: '/icons/icon-192x192.png',
     apple: '/icons/icon-192x192.png',
   },
+};
+
+export const viewport = {
+  themeColor: '#0a0a0a',
+  width: 'device-width',
+  initialScale: 1.0,
+  maximumScale: 1.0,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }) {
