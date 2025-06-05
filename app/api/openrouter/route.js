@@ -41,15 +41,23 @@ export async function POST(req) {
       messages: modifiedMessages,
       model: "deepseek/deepseek-chat-v3-0324:free",
       stream: false,
-      max_tokens: 100
+      max_tokens: 1000,
+      temperature: 0.5
     });
 
+    const responseContent = completion.choices[0]?.message?.content || "No response from assistant.";
+    console.log('Generated response length:', responseContent.length);
+
     return NextResponse.json({ 
-      reply: completion.choices[0]?.message?.content || "No response from assistant." 
+      reply: responseContent
     });
   } catch (error) {
+    console.error('OpenRouter API Error:', error);
     return NextResponse.json(
-      { error: "Failed to extract names" },
+      { 
+        error: "Failed to get response from AI assistant",
+        details: error.message 
+      },
       { status: 500 }
     );
   }

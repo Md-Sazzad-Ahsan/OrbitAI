@@ -5,12 +5,25 @@ import { useEffect, useState } from 'react';
 export default function PWAInstaller() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // Set mounted state to true after component mounts
+    setIsMounted(true);
+    
+    // Check if user has previously dismissed the prompt
+    const hasDismissed = localStorage?.getItem('pwaPromptDismissed');
+    if (hasDismissed === 'true') return;
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsVisible(true);
+      // Show prompt only after a short delay to ensure page has loaded
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -23,27 +36,61 @@ export default function PWAInstaller() {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response: ${outcome}`);
-    setIsVisible(false);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response: ${outcome}`);
+      if (outcome === 'accepted') {
+        localStorage?.setItem('pwaPromptDismissed', 'true');
+      }
+    } catch (error) {
+      console.error('Error during PWA installation:', error);
+    } finally {
+      setIsVisible(false);
+    }
   };
 
-  if (!isVisible) return null;
+  const handleDismiss = () => {
+    setIsVisible(false);
+    // Remember user's choice for 7 days
+    localStorage?.setItem('pwaPromptDismissed', 'true');
+  };
+
+  // Don't render until component is mounted to avoid hydration issues
+  if (!isMounted || !isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50">
-      <div className="flex items-center gap-4">
-        <div>
-          <h3 className="font-medium">Install OrbitAI</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-300">Add to your home screen for a better experience</p>
+    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50 max-w-xs border border-gray-200 dark:border-gray-700">
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <div className="flex justify-between items-start mb-1">
+            <h3 className="font-medium text-gray-900 dark:text-white">Install OrbitAI</h3>
+            <button
+              onClick={handleDismiss}
+              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              aria-label="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mb-3">Add to your home screen for a better experience</p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleInstallClick}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors"
+            >
+              Install
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="px-4 py-2 bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-sm font-medium transition-colors"
+            >
+              Not now
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleInstallClick}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Install
-        </button>
       </div>
     </div>
   );
