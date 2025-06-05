@@ -2,12 +2,31 @@ import { PiDotsThreeVerticalBold } from "react-icons/pi";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { useState, useEffect, useRef } from 'react';
 import { BsArrowLeftSquare } from "react-icons/bs";
+import {
+  getAllConversations,
+  createNewConversation,
+  deleteConversation,
+  updateConversationTitle,
+} from '../utils/conversationStorage';
 
-const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, activeChatId, onEditChatTitle, onDeleteChat }) => {
+const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
+  const [conversations, setConversations] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(null);
   const dropdownButtonRefs = useRef({});
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+
+  // Load conversations from localStorage
+  useEffect(() => {
+    setConversations(getAllConversations());
+    // Listen for changes from other tabs/windows
+    const handleStorage = () => setConversations(getAllConversations());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Helper to refresh list
+  const refreshConversations = () => setConversations(getAllConversations());
 
   // Only close dropdown when clicking outside
   useEffect(() => {
@@ -23,6 +42,35 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
   const handleDotsClick = (chatId) => (e) => {
     e.stopPropagation();
     setDropdownOpen(dropdownOpen === chatId ? null : chatId);
+  };
+
+  const handleSelectChat = (id) => {
+    if (onSelectChat) {
+      onSelectChat(id);
+    }
+  };
+
+  const handleNewChat = () => {
+    const newConv = createNewConversation();
+    refreshConversations();
+    if (onSelectChat) {
+      onSelectChat(newConv.id);
+    }
+  };
+
+  const handleEditChatTitle = (id, title) => {
+    updateConversationTitle(id, title);
+    refreshConversations();
+  };
+
+  const handleDeleteChat = (id) => {
+    deleteConversation(id);
+    refreshConversations();
+    // Optionally, auto-select another chat or clear selection
+    if (onSelectChat && conversations.length > 1) {
+      const remaining = conversations.filter(c => c.id !== id);
+      if (remaining.length > 0) onSelectChat(remaining[0].id);
+    }
   };
 
   return (
@@ -54,7 +102,7 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
             <div className="p-4">
               <button
                 className="w-full py-2 text-sm font-medium text-white bg-gray-500 dark:bg-gray-800 rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center shadow-md border border-gray-500 dark:border-gray-600"
-                onClick={onNewChat}
+                onClick={handleNewChat}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -64,8 +112,8 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-2">
-                {chats && chats.length > 0 ? (
-                  chats.map(chat => (
+                {conversations && conversations.length > 0 ? (
+                  conversations.map(chat => (
                     <div
                       key={chat.id}
                       className={`p-3 rounded-md cursor-pointer truncate flex flex-col ${
@@ -77,7 +125,7 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
                       <div className="flex items-center justify-between">
                         <div
                           className="flex-1 min-w-0"
-                          onClick={() => onSelectChat(chat.id)}
+                          onClick={() => handleSelectChat(chat.id)}
                         >
                           {editingChatId === chat.id ? (
                             <input
@@ -87,14 +135,14 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
                               onChange={e => setEditingTitle(e.target.value)}
                               onBlur={() => {
                                 const trimmed = editingTitle.trim();
-                                onEditChatTitle(chat.id, trimmed || 'Untitled Chat');
+                                handleEditChatTitle(chat.id, trimmed || 'Untitled Chat');
                                 setEditingChatId(null);
                                 setEditingTitle('');
                               }}
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   const trimmed = editingTitle.trim();
-                                  onEditChatTitle(chat.id, trimmed || 'Untitled Chat');
+                                  handleEditChatTitle(chat.id, trimmed || 'Untitled Chat');
                                   setEditingChatId(null);
                                   setEditingTitle('');
                                 }
@@ -135,7 +183,7 @@ const Sidebar = ({ isOpen, toggleSidebar, chats, onSelectChat, onNewChat, active
                             title="Delete Chat"
                             onClick={() => {
                               setDropdownOpen(null);
-                              onDeleteChat(chat.id);
+                              handleDeleteChat(chat.id);
                             }}
                           >
                             <FiTrash2 className="h-5 w-5 text-red-500 dark:text-red-400" />
