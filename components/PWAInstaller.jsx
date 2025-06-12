@@ -2,27 +2,31 @@
 
 import { useEffect, useState } from 'react';
 
+const DISMISS_KEY = 'pwaPromptDismissedAt';
+const DISMISS_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 days in ms
+
 export default function PWAInstaller() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Set mounted state to true after component mounts
     setIsMounted(true);
-    
-    // Check if user has previously dismissed the prompt
-    const hasDismissed = localStorage?.getItem('pwaPromptDismissed');
-    if (hasDismissed === 'true') return;
+
+    const dismissedAt = localStorage.getItem(DISMISS_KEY);
+    if (dismissedAt) {
+      const timeElapsed = Date.now() - Number(dismissedAt);
+      if (timeElapsed < DISMISS_DURATION) return; // Don't show if within 3 days
+    }
 
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Show prompt only after a short delay to ensure page has loaded
+
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     };
 
@@ -35,13 +39,13 @@ export default function PWAInstaller() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
+
     try {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`User response: ${outcome}`);
       if (outcome === 'accepted') {
-        localStorage?.setItem('pwaPromptDismissed', 'true');
+        localStorage.setItem(DISMISS_KEY, Date.now().toString());
       }
     } catch (error) {
       console.error('Error during PWA installation:', error);
@@ -52,11 +56,9 @@ export default function PWAInstaller() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    // Remember user's choice for 7 days
-    localStorage?.setItem('pwaPromptDismissed', 'true');
+    localStorage.setItem(DISMISS_KEY, Date.now().toString());
   };
 
-  // Don't render until component is mounted to avoid hydration issues
   if (!isMounted || !isVisible) return null;
 
   return (
