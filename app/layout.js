@@ -1,10 +1,12 @@
 import './globals.css';
 import ClientLayout from './client-layout';
+import { Suspense } from 'react';
 import PWAInstaller from '../components/PWAInstaller';
 
 export const metadata = {
   title: 'OrbitAI',
   description: 'A modern web application',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -38,10 +40,12 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900 antialiased">
-        <ClientLayout>
-          {children}
-          <PWAInstaller />
-        </ClientLayout>
+        <Suspense fallback={null}>
+          <ClientLayout>
+            {children}
+            <PWAInstaller />
+          </ClientLayout>
+        </Suspense>
       </body>
     </html>
   );

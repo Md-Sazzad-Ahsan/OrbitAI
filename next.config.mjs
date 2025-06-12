@@ -1,19 +1,20 @@
-/** @type {import('next').NextConfig} */
-import withPWA from 'next-pwa';
+// next.config.mjs
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
-const pwaConfig = withPWA({
+const withPWA = require('next-pwa')({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
 });
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['image.tmdb.org']
+    domains: ['image.tmdb.org'],
   },
-  // Add other Next.js config options here
 };
 
-export default pwaConfig(nextConfig);
+export default withPWA(nextConfig);
