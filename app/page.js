@@ -116,17 +116,19 @@ export default function Home() {
   }, [activeChatId, messages.length]);
 
   return (
-    <div className="relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Main content area with padding for header and input */}
-      <div className="flex-1 overflow-y-auto pt-16 pb-32">
-        <div className="max-w-3xl mx-auto w-full px-2">
-          <Conversation messages={messages} isThinking={isThinking} isStreaming={isStreaming} />
+    <div className="flex flex-col h-screen">
+      {/* Main content area with padding for header */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="max-w-3xl mx-auto w-full py-4">
+            <Conversation messages={messages} isThinking={isThinking} isStreaming={isStreaming} />
+          </div>
         </div>
       </div>
       
       {/* Fixed input at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent pt-4 pb-4 px-4 z-10">
-        <div className="max-w-3xl mx-auto w-full">
+      <div className="w-full bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
+        <div className="max-w-3xl mx-auto w-full px-4 md:px-0 pb-4">
           <UserInput 
             onMessageSent={addMessages} 
             messages={messages}

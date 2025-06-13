@@ -42,14 +42,16 @@ export default function ClientLayout({ children }) {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+    <div className="flex flex-col min-h-screen">
       <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 pt-16">
+      <div className="flex flex-1 pt-16 overflow-hidden">
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} activeChatId={activeChatId} onSelectChat={handleSelectChat} />
-        <main className="flex-1 p-4 transition-all duration-300 ease-in-out">
-          {children && typeof children === 'function'
-            ? children({ activeChatId })
-            : children}
+        <main className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+          <div className="h-full flex flex-col">
+            {children && typeof children === 'function'
+              ? children({ activeChatId })
+              : children}
+          </div>
         </main>
       </div>
       <Footer />
