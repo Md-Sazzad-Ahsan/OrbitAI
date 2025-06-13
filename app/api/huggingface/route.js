@@ -52,13 +52,13 @@ export async function POST(req) {
           messages: [
             {
               role: "system",
-              content: "You are a polite, gentle, and helpful multi-modal assistant, who always respond in short and clean Markdown."
+              content: "You are a polite, gentle, and helpful AI assistant"+"Always respond in short and clean Markdown format."+"Do not include thinking tags like <think>, </think>"
             },
             ...messages
           ],
           stream: true,  // Enable streaming
           temperature: 0.5,
-          max_tokens: 500,
+          max_tokens: 1000,
         });
 
         // Stream the response

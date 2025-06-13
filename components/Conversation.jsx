@@ -141,7 +141,7 @@ export default function Conversation({ messages = [], isThinking = false, isStre
             Start a conversation with OrbitAI
           </div>
         ) : (
-          <div className="space-y-2 py-2">
+          <div className="space-y-2 py-1">
             {/* Show all displayed messages */}
             {displayedMessages.map((msg, idx) => (
               <div

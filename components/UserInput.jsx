@@ -18,7 +18,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   
   const dropRef = useRef(null);
 
-  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro", "DeepSeek-R1", "HuggingFace"];
+  const models = ["GPT-4.1", "GPT-4 Turbo", "GPT-3.5", "Claude 3", "Gemini Pro","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
 
   const handleSend = async () => {
     const trimmedMessage = message.trim();
@@ -43,12 +43,35 @@ export default function UserInput({ onMessageSent, messages = [] }) {
     onMessageSent([], true);
     
     try {
-      const isHuggingFace = selectedModel === "HuggingFace";
+      const isHuggingFace = selectedModel === "DeepSeek-R1-0528";
       const apiEndpoint = isHuggingFace 
         ? "/api/huggingface" 
         : "/api/openrouter";
 
-      if (isHuggingFace) {
+      if (selectedModel === "DeepSeek-V3") {
+        // Handle DeepSeek-V3 API call
+        const response = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            messages: conversationHistory,
+            model: selectedModel
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response from DeepSeek-V3 AI');
+        }
+
+        const data = await response.json();
+        const assistantMsg = { 
+          role: "assistant", 
+          content: data.reply || data.message || "Received an empty response from DeepSeek-V3 AI.",
+          timestamp: Date.now()
+        };
+        
+        onMessageSent([assistantMsg], false);
+      } else if (isHuggingFace) {
         // Handle streaming for HuggingFace
         const response = await fetch(apiEndpoint, {
           method: "POST",
@@ -57,7 +80,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to get response from AI');
+          throw new Error('Failed to get response from DeepSeek-R1 AI');
         }
 
         // Create a streaming response
