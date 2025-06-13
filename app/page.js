@@ -1,18 +1,31 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import UserInput from '@/components/UserInput';
 import Conversation from '@/components/Conversation';
+import { createNewConversation } from './utils/conversationStorage';
 
 export default function Home() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chatId');
+  const initialLoad = useRef(true);
   
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeChatId, setActiveChatId] = useState(chatId);
+
+  // Handle initial load and page refresh
+  useEffect(() => {
+    // Only run this effect on initial load or when chatId changes
+    if (initialLoad.current && !chatId) {
+      const newConversation = createNewConversation();
+      router.replace(`/?chatId=${newConversation.id}`);
+    }
+    initialLoad.current = false;
+  }, [chatId, router]);
   
   // Update activeChatId and load messages when URL changes
   useEffect(() => {
@@ -44,11 +57,14 @@ export default function Home() {
     if (!activeChatId) return;
     
     const handleStorageChange = (e) => {
-      if (e.key === `conversation_${activeChatId}` || e.key === 'conversations_list') {
-        const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
-        if (conversation && conversation.messages) {
-          setMessages(conversation.messages);
-        }
+      // Skip if this is a different conversation
+      if (e.key && !e.key.startsWith(`conversation_${activeChatId}`) && e.key !== 'conversations_list') {
+        return;
+      }
+      
+      const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
+      if (conversation && conversation.messages) {
+        setMessages(conversation.messages);
       }
     };
     

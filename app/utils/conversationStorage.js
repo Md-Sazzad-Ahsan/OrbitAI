@@ -45,7 +45,8 @@ export function createNewConversation() {
   const conversation = {
     id,
     title: 'New Chat',
-    messages: []
+    messages: [],
+    createdAt: new Date().toISOString()
   };
   saveConversation(conversation);
   return conversation;
