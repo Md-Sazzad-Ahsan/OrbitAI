@@ -37,19 +37,45 @@ export async function POST(req) {
       ...messages
     ];
 
-    const completion = await openai.chat.completions.create({
-      messages: modifiedMessages,
-      model: "deepseek/deepseek-chat-v3-0324:free",
-      stream: false,
-      max_tokens: 1000,
-      temperature: 0.5
+    // Create a streaming response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const stream = await openai.chat.completions.create({
+            messages: modifiedMessages,
+            model: "deepseek/deepseek-chat-v3:free",
+            stream: true,
+            max_tokens: 1000,
+            temperature: 0.5
+          });
+
+          for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+              controller.enqueue(
+                `data: ${JSON.stringify({ reply: content })}\n\n`
+              );
+            }
+          }
+          
+          controller.enqueue('data: [DONE]\n\n');
+          controller.close();
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.enqueue(
+            `data: ${JSON.stringify({ error: 'Error generating response' })}\n\n`
+          );
+          controller.close();
+        }
+      },
     });
 
-    const responseContent = completion.choices[0]?.message?.content || "No response from assistant.";
-    console.log('Generated response length:', responseContent.length);
-
-    return NextResponse.json({ 
-      reply: responseContent
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
     console.error('OpenRouter API Error:', error);
