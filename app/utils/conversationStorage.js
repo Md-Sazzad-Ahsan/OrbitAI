@@ -8,7 +8,8 @@ export function getAllConversations() {
   return ids.map(id => {
     const conv = JSON.parse(localStorage.getItem(CONVERSATION_PREFIX + id) || '{}');
     return conv && conv.id ? conv : null;
-  }).filter(Boolean);
+  }).filter(Boolean)
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
 export function getConversation(id) {
