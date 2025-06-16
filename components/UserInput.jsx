@@ -24,33 +24,30 @@ export default function UserInput({ onMessageSent, messages = [] }) {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedFile) return;
 
-    const userMsg = { 
-      role: "user", 
+    const userMsg = {
+      role: "user",
       content: trimmedMessage,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    
+
     const conversationHistory = [...messages, userMsg];
-    
-    // Clear input immediately for better UX
+
+    // Update UI immediately
     setMessage("");
     setSelectedFile(null);
-    
-    // Show user message immediately
-    onMessageSent([userMsg], false);
-    
-    // Show thinking state
-    const assistantMsg = { 
-      role: "assistant", 
+    onMessageSent([userMsg], false); // Add user message to conversation
+
+    // Prepare for assistant's response
+    const assistantMsg = {
+      role: "assistant",
       content: "",
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    onMessageSent([assistantMsg], true);
-    
+    onMessageSent([assistantMsg], true); // Show 'thinking' state
+
     try {
-      // Determine the API endpoint based on the selected model
       let apiEndpoint;
-      switch(selectedModel) {
+      switch (selectedModel) {
         case 'GPT-4.1':
           apiEndpoint = '/api/nvdia-gemma';
           break;
@@ -67,237 +64,65 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           apiEndpoint = '/api/openrouter';
       }
 
-      if (selectedModel === "DeepSeek-V3") {
-        // Handle DeepSeek-V3 with streaming response
-        const response = await fetch(apiEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            messages: conversationHistory,
-            model: selectedModel,
-            stream: true
-          }),
-        });
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: conversationHistory }),
+      });
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Failed to get response from DeepSeek-V3 AI: ${errorData}`);
+      if (!response.ok || !response.body) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} ${errorText}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          onMessageSent([{ ...assistantMsg }], false); // Final update, turn off thinking
+          break;
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        // Use the assistantMsg already created above
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
 
-        // Process the stream asynchronously for better performance
-        (async () => {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              // Process chunks immediately as they arrive
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = (buffer + chunk).split('\n\n');
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                if (line === 'data: [DONE]') {
-                  onMessageSent([assistantMsg], false);
-                  return;
-                }
-                
-                try {
-                  const data = line.replace(/^data: /, '');
-                  const parsed = JSON.parse(data);
-                  if (parsed.choices?.[0]?.delta?.content) {
-                    assistantMsg.content += parsed.choices[0].delta.content;
-                    // Use requestAnimationFrame for smoother UI updates
-                    requestAnimationFrame(() => {
-                      onMessageSent([{ ...assistantMsg }], true);
-                    });
-                  }
-                } catch (e) {
-                  console.error('Error parsing chunk:', e, 'Chunk:', line);
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Stream error:', error);
-            onMessageSent([{ 
-              role: 'assistant', 
-              content: 'Sorry, there was an error processing the response.',
-              timestamp: Date.now()
-            }], false);
+        for (const line of lines) {
+          if (!line.trim().startsWith("data:")) continue;
+
+          const jsonStr = line.replace("data:", "").trim();
+          if (jsonStr === "[DONE]") {
+            onMessageSent([{ ...assistantMsg }], false); // Turn off thinking
+            return; // Exit loop
           }
-        })();
-      } else if (selectedModel === "DeepSeek-R1") {
-        // Handle DeepSeek-R1 with HuggingFace API (streaming)
-        const response = await fetch(apiEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            messages: conversationHistory,
-            model: selectedModel,
-            stream: true
-          }),
-        });
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Failed to get response from DeepSeek-R1 AI: ${errorData}`);
-        }
-        
-        // Handle streaming response asynchronously
-        (async () => {
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          
           try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n\n');
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                if (line === 'data: [DONE]') {
-                  onMessageSent([assistantMsg], false);
-                  return;
-                }
-                
-                try {
-                  const data = line.replace(/^data: /, '');
-                  const parsed = JSON.parse(data);
-                  if (parsed.reply) {
-                    assistantMsg.content += parsed.reply;
-                    requestAnimationFrame(() => {
-                      onMessageSent([{ ...assistantMsg }], true);
-                    });
-                  } else if (parsed.error) {
-                    throw new Error(parsed.error);
-                  }
-                } catch (e) {
-                  console.error('Error parsing chunk:', e, 'Chunk:', line);
-                }
-              }
+            const parsed = JSON.parse(jsonStr);
+            // Universal content extraction from different API responses
+            const content = parsed.reply || parsed.choices?.[0]?.delta?.content || "";
+            if (content) {
+              assistantMsg.content += content;
+              // Update the UI in real-time
+              onMessageSent([{ ...assistantMsg }], true);
             }
-          } catch (error) {
-            console.error('Stream error:', error);
-            onMessageSent([{ 
-              role: 'assistant', 
-              content: 'Sorry, there was an error processing the response.',
-              timestamp: Date.now()
-            }], false);
+          } catch (e) {
+            // This can happen if the JSON is incomplete; buffer will handle it
+            console.error("Error parsing streaming JSON chunk:", e, "Chunk:", jsonStr);
           }
-        })();
-      } else if (selectedModel === "DeepSeek-R1-0528") {
-        // Handle DeepSeek-R1-0528 with OpenRouter API - non-streaming
-        const response = await fetch(apiEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            messages: conversationHistory,
-            model: selectedModel,
-            stream: true
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Failed to get response from DeepSeek-R1-0528 AI: ${errorData}`);
         }
-
-        // Start showing response immediately
-        const assistantMsg = { 
-          role: "assistant", 
-          content: "",
-          timestamp: Date.now()
-        };
-        
-        // Process the response as it streams in
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        (async () => {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n\n');
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                if (line === 'data: [DONE]') {
-                  onMessageSent([assistantMsg], false);
-                  return;
-                }
-                
-                try {
-                  const data = line.replace(/^data: /, '');
-                  const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content || 
-                                parsed.choices?.[0]?.message?.content ||
-                                parsed.reply || 
-                                parsed.message || '';
-                  
-                  if (content) {
-                    assistantMsg.content += content;
-                    requestAnimationFrame(() => {
-                      onMessageSent([{ ...assistantMsg }], true);
-                    });
-                  }
-                } catch (e) {
-                  console.error('Error parsing chunk:', e, 'Chunk:', line);
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Stream error:', error);
-            onMessageSent([{ 
-              role: 'assistant', 
-              content: 'Sorry, there was an error processing the response.',
-              timestamp: Date.now()
-            }], false);
-          }
-        })();
-      } else {
-        // Original non-streaming logic for other models
-        const res = await fetch(apiEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: conversationHistory }),
-        });
-    
-        if (!res.ok) {
-          throw new Error('Failed to get response from AI');
-        }
-        
-        const data = await res.json();
-        const assistantMsg = { 
-          role: "assistant", 
-          content: data.reply,
-          timestamp: Date.now()
-        };
-        
-        onMessageSent([assistantMsg], false);
       }
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      onMessageSent([{ 
-        role: "assistant", 
-        content: "Sorry, I encountered an error. Please try again.",
-        timestamp: Date.now()
-      }], false);
+      console.error('Failed to get AI response:', error);
+      onMessageSent([
+        {
+          role: "assistant",
+          content: `Sorry, an error occurred: ${error.message}`,
+          timestamp: Date.now(),
+        },
+      ], false);
     }
   };
   

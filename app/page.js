@@ -14,7 +14,7 @@ export default function Home() {
   
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+
   const [activeChatId, setActiveChatId] = useState(chatId);
 
   // Handle initial load and page refresh
@@ -33,7 +33,6 @@ export default function Home() {
     
     // Clear current messages immediately when chatId changes
     setMessages([]);
-    setIsStreaming(false);
     setIsThinking(false);
     
     // Set the new active chat ID
@@ -89,46 +88,37 @@ export default function Home() {
     }
   }, [messages, activeChatId]);
 
-  const addMessages = useCallback(async (newMsgs, isThinkingState = false) => {
-    // If this is just a thinking state update
-    if (isThinkingState) {
-      setIsThinking(true);
-      return;
-    }
-    
-    // For actual messages
-    const isAssistantResponse = newMsgs[0]?.role === 'assistant';
-    
+    const handleMessageSent = useCallback((newMsgs, isStreaming) => {
+    // Set the thinking state for the UI
+    setIsThinking(isStreaming);
+
+    const newMsg = newMsgs[0];
+
     // Update chat title if this is the first user message
-    if (!isAssistantResponse && messages.length === 0 && newMsgs[0]?.content) {
-      const newTitle = newMsgs[0].content.substring(0, 50); // Use first 50 chars as title
+    if (newMsg.role === 'user' && messages.length === 0 && newMsg.content) {
+      const newTitle = newMsg.content.substring(0, 50);
       const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
       if (conversation && conversation.title === 'New Chat') {
         conversation.title = newTitle;
         localStorage.setItem(`conversation_${activeChatId}`, JSON.stringify(conversation));
-        
-        // Trigger a storage event to update the sidebar
         window.dispatchEvent(new Event('storage'));
       }
     }
-    
-    // Add the message to state
-    setMessages(prev => [...prev, ...newMsgs]);
-    
-    if (isAssistantResponse) {
-      // Start streaming for assistant messages
-      setIsStreaming(true);
-      
-      // Stop thinking when we start streaming
-      setIsThinking(false);
-      
-      // Stop streaming after a short delay
-      const timer = setTimeout(() => {
-        setIsStreaming(false);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
+
+    setMessages(prevMessages => {
+      const lastMessage = prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
+
+      // If the new message is from the assistant and the last message is also from the assistant,
+      // it's a streaming update. Replace the last message.
+      if (newMsg.role === 'assistant' && lastMessage && lastMessage.role === 'assistant') {
+        const updatedMessages = [...prevMessages];
+        updatedMessages[updatedMessages.length - 1] = newMsg;
+        return updatedMessages;
+      } else {
+        // Otherwise, it's a new message (user's first message, or the initial empty assistant message).
+        return [...prevMessages, ...newMsgs];
+      }
+    });
   }, [activeChatId, messages.length]);
 
   return (
@@ -137,7 +127,7 @@ export default function Home() {
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto px-4">
           <div className="max-w-3xl mx-auto w-full py-4">
-            <Conversation messages={messages} isThinking={isThinking} isStreaming={isStreaming} />
+            <Conversation messages={messages} isThinking={isThinking} />
           </div>
         </div>
       </div>
@@ -146,7 +136,7 @@ export default function Home() {
       <div className="w-full bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
         <div className="max-w-3xl mx-auto w-full px-4 md:px-0 pb-4">
           <UserInput 
-            onMessageSent={addMessages} 
+            onMessageSent={handleMessageSent} 
             messages={messages}
           />
         </div>
