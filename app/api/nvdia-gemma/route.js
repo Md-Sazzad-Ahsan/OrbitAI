@@ -60,27 +60,45 @@ export async function POST(req) {
           }
         );
 
+        let isStreamClosed = false;
+
+        const closeController = () => {
+          if (!isStreamClosed) {
+            isStreamClosed = true;
+            controller.close();
+          }
+        };
+
         // Listen to data stream chunks
         response.data.on("data", (chunk) => {
-          const textChunk = chunk.toString();
-          // NVIDIA streams SSE formatted data, forward as-is
-          controller.enqueue(encoder.encode(textChunk));
-          // Stop if [DONE] received
-          if (textChunk.includes("[DONE]")) {
-            controller.close();
+          try {
+            const textChunk = chunk.toString();
+            // NVIDIA streams SSE formatted data, forward as-is
+            controller.enqueue(encoder.encode(textChunk));
+            // Stop if [DONE] received
+            if (textChunk.includes("[DONE]")) {
+              closeController();
+            }
+          } catch (err) {
+            console.error("Error processing chunk:", err);
+            closeController();
           }
         });
 
         response.data.on("end", () => {
-          controller.close();
+          closeController();
         });
 
         response.data.on("error", (err) => {
           console.error("Stream error:", err);
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-          );
-          controller.close();
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+            );
+          } catch (e) {
+            console.error("Error sending error to client:", e);
+          }
+          closeController();
         });
       } catch (err) {
         console.error("NVIDIA stream request error:", err);

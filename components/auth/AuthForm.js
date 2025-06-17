@@ -25,13 +25,16 @@ export default function AuthForm() {
         });
 
         if (error) throw error;
-        setMessage({ type: 'success', text: 'Successfully logged in!' });
+        
+        // Redirect to dashboard on successful login
+        window.location.href = '/';
+        return; // Prevent further execution
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
           },
         });
 
