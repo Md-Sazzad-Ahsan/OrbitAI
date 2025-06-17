@@ -38,6 +38,7 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0a0a0a" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="google-site-verification" content="jG83ZnHndidg8hNk2FfP3Pcijoig8sOOZAa9YbRgq-s" />
       </head>
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900 antialiased">
         <Suspense fallback={null}>
