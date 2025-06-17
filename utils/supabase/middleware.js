@@ -68,7 +68,7 @@ export async function updateSession(request) {
   // If the user is signed in and the current path is /login, redirect to /dashboard
   if (session && request.nextUrl.pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
