@@ -5,8 +5,8 @@ import PWAInstaller from '../components/PWAInstaller';
 
 export const metadata = {
   title: 'OrbitAI',
-  description: 'A modern web application',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  description: 'A modern AI intelligence',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL),
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

@@ -48,9 +48,10 @@ export default function ClientLayout({ children }) {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} activeChatId={activeChatId} onSelectChat={handleSelectChat} />
         <main className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
           <div className="h-full flex flex-col">
-            {children && typeof children === 'function'
-              ? children({ activeChatId })
-              : children}
+          {children && typeof children === 'function'
+  ? children({ activeChatId, isSidebarOpen }) // ✅ pass sidebar status
+  : children}
+
           </div>
         </main>
       </div>
