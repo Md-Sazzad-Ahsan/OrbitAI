@@ -64,11 +64,11 @@ export default function HelpPage() {
             </FAQItem>
 
             <FAQItem question="How can I customize my experience?">
-              <p>You can personalize your experience by clicking on your profile picture and selecting 'Personalize'. Here you can set your preferences for how OrbitAI interacts with you.</p>
+              <p>You can personalize your experience by clicking on your profile picture and selecting &apos;Personalize&apos;. Here you can set your preferences for how OrbitAI interacts with you.</p>
             </FAQItem>
 
             <FAQItem question="Is there a mobile app available?">
-              <p>Currently, OrbitAI is available as a web application that works on both desktop and mobile browsers. We're working on dedicated mobile apps which will be available soon.</p>
+              <p>Currently, OrbitAI is available as a web application that works on both desktop and mobile browsers. We&apos;re working on dedicated mobile apps which will be available soon.</p>
             </FAQItem>
 
             <FAQItem question="How can I contact support?">

@@ -5,7 +5,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { FiPaperclip } from "react-icons/fi";
 import { IoSend } from "react-icons/io5";
 import { MdImage, MdPictureAsPdf, MdDescription, MdClose, MdMic, MdStop } from "react-icons/md";
-import { FaChevronUp, FaChevronDown, FaMicrophone } from "react-icons/fa";
+import { FaChevronUp, FaChevronDown } from "react-icons/fa";
+import { LuAudioLines } from "react-icons/lu";
 import dynamic from 'next/dynamic';
 
 export default function UserInput({ onMessageSent, messages = [] }) {
@@ -220,29 +221,55 @@ export default function UserInput({ onMessageSent, messages = [] }) {
         recognitionRef.current.interimResults = true;
         
         recognitionRef.current.onresult = (event) => {
+          let interimTranscript = '';
           let finalTranscript = '';
+          
           for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript + ' ';
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
             }
           }
           
+          // Update the message with the current transcript
           if (finalTranscript) {
+            // For final results, add to the message
             const newText = finalTranscript.trim();
-            setMessage(prev => prev + (prev ? ' ' : '') + newText);
+            setMessage(prev => {
+              const base = prev.endsWith(interimTranscript) 
+                ? prev.slice(0, -interimTranscript.length).trim() 
+                : prev;
+              return (base ? base + ' ' : '') + newText;
+            });
             lastSpokenTextRef.current = newText;
-            
-            // Auto-send after 1.5 seconds of silence
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
-            
-            timeoutRef.current = setTimeout(() => {
-              if (lastSpokenTextRef.current) {
-                stopRecordingRef.current(true);
+          } else if (interimTranscript) {
+            // For interim results, replace the last interim result
+            setMessage(prev => {
+              // Find the last interim result in the current message
+              const lastSpace = prev.lastIndexOf(' ');
+              const lastWord = lastSpace === -1 ? prev : prev.slice(lastSpace + 1);
+              
+              // If the last word is likely part of the current interim result, replace it
+              if (lastWord && interimTranscript.toLowerCase().includes(lastWord.toLowerCase())) {
+                return prev.slice(0, lastSpace + 1) + interimTranscript;
               }
-            }, 1500);
+              // Otherwise append the new interim result
+              return prev + (prev && !prev.endsWith(' ') ? ' ' : '') + interimTranscript;
+            });
           }
+          
+          // Auto-send after 1.5 seconds of silence
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+          
+          timeoutRef.current = setTimeout(() => {
+            if (lastSpokenTextRef.current) {
+              stopRecordingRef.current(true);
+            }
+          }, 1500);
         };
         
         recognitionRef.current.onerror = (event) => {
@@ -428,7 +455,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
             className={`p-1.5 rounded-full ${isRecording ? 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900' : hasMicPermission ? 'text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             aria-label={isRecording ? 'Stop recording' : hasMicPermission ? 'Start recording' : 'Request microphone access'}
           >
-            {isRecording ? <MdStop size={20} /> : hasMicPermission ? <MdMic size={20} /> : <FaMicrophone size={18} />}
+            {isRecording ? <MdStop size={20} /> : hasMicPermission ? <LuAudioLines size={20} /> : <LuAudioLines size={18} />}
           </button>
 
           {/* Send Button */}
