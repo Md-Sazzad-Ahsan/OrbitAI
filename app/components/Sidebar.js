@@ -77,10 +77,19 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
   };
 
   const handleDeleteChat = (id) => {
+    const wasActiveChat = id === activeChatId;
     deleteConversation(id);
     refreshConversations();
-    // Optionally, auto-select another chat or clear selection
-    if (onSelectChat && conversations.length > 1) {
+    
+    if (wasActiveChat) {
+      // If the deleted chat was the active one, create a new empty chat
+      const newConv = createNewConversation();
+      refreshConversations();
+      if (onSelectChat) {
+        onSelectChat(newConv.id);
+      }
+    } else if (onSelectChat && conversations.length > 1) {
+      // If there are other chats, select the most recent one
       const remaining = conversations.filter(c => c.id !== id);
       if (remaining.length > 0) onSelectChat(remaining[0].id);
     }

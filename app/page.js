@@ -15,15 +15,43 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
   const [activeChatId, setActiveChatId] = useState(chatId);
 
   useEffect(() => {
-    if (initialLoad.current && !chatId) {
-      const newConversation = createNewConversation();
-      router.replace(`/?chatId=${newConversation.id}`);
+    if (initialLoad.current) {
+      initialLoad.current = false;
+      if (!chatId) {
+        // Always create a new chat when navigating to root URL
+        const newConversation = createNewConversation();
+        router.replace(`/?chatId=${newConversation.id}`);
+      }
     }
-    initialLoad.current = false;
   }, [chatId, router]);
+
+  // Track the previous chat ID to clean up empty chats
+  const prevChatIdRef = useRef(activeChatId);
 
   useEffect(() => {
     if (!chatId) return;
+    
+    // Clean up the previous chat if it was empty
+    const prevChatId = prevChatIdRef.current;
+    if (prevChatId && prevChatId !== chatId) {
+      const prevConversation = JSON.parse(localStorage.getItem(`conversation_${prevChatId}`) || '{}');
+      if (prevConversation && (!prevConversation.messages || prevConversation.messages.length === 0)) {
+        // Remove the empty conversation
+        localStorage.removeItem(`conversation_${prevChatId}`);
+        // Update the conversations list
+        const convs = JSON.parse(localStorage.getItem('conversations_list') || '[]');
+        const updatedConvs = convs.filter(id => id !== prevChatId);
+        if (updatedConvs.length !== convs.length) {
+          localStorage.setItem('conversations_list', JSON.stringify(updatedConvs));
+          window.dispatchEvent(new Event('storage'));
+        }
+      }
+    }
+    
+    // Update the previous chat ID
+    prevChatIdRef.current = chatId;
+    
+    // Load the new chat
     setMessages([]);
     setIsThinking(false);
     setActiveChatId(chatId);
@@ -68,12 +96,35 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
     setIsThinking(isStreaming);
     const newMsg = newMsgs[0];
 
+    // Only update title if this is the first message in the conversation
     if (newMsg.role === 'user' && messages.length === 0 && newMsg.content) {
       const newTitle = newMsg.content.substring(0, 50);
       const conversation = JSON.parse(localStorage.getItem(`conversation_${activeChatId}`) || '{}');
-      if (conversation && conversation.title === 'New Chat') {
-        conversation.title = newTitle;
-        localStorage.setItem(`conversation_${activeChatId}`, JSON.stringify(conversation));
+      if (conversation) {
+        // Only update title if it's still the default
+        if (conversation.title === 'New Chat') {
+          conversation.title = newTitle;
+          conversation.updatedAt = new Date().toISOString();
+          localStorage.setItem(`conversation_${activeChatId}`, JSON.stringify(conversation));
+          window.dispatchEvent(new Event('storage'));
+        }
+      } else {
+        // If conversation doesn't exist, create it with the first message
+        const newConversation = {
+          id: activeChatId,
+          title: newTitle,
+          messages: [...messages, ...newMsgs],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`conversation_${activeChatId}`, JSON.stringify(newConversation));
+        
+        // Add to conversations list if not present
+        const convs = JSON.parse(localStorage.getItem('conversations_list') || '[]');
+        if (!convs.includes(activeChatId)) {
+          convs.unshift(activeChatId); // Add to beginning of array
+          localStorage.setItem('conversations_list', JSON.stringify(convs));
+        }
         window.dispatchEvent(new Event('storage'));
       }
     }
