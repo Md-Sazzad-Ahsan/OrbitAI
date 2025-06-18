@@ -45,7 +45,7 @@ export default function TermsPage() {
                 <li>Violate any laws or regulations</li>
                 <li>Infringe on intellectual property rights</li>
                 <li>Transmit harmful or malicious code</li>
-                <li>Interfere with the service's operation</li>
+                <li>Interfere with the service&apos;s operation</li>
               </ul>
 
               <h2>5. Intellectual Property</h2>

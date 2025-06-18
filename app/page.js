@@ -139,7 +139,7 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
         return [...prev, ...newMsgs];
       }
     });
-  }, [activeChatId, messages.length]);
+  }, [activeChatId, messages]);
 
   return (
     <>
