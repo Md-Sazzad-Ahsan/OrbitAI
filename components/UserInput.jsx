@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 import { FiPaperclip } from "react-icons/fi";
 import { IoSend } from "react-icons/io5";
-import { MdImage, MdPictureAsPdf, MdDescription, MdClose } from "react-icons/md";
+import { MdImage, MdPictureAsPdf, MdDescription, MdClose, MdMic, MdStop } from "react-icons/md";
 import { FaChevronUp, FaChevronDown, FaMicrophone } from "react-icons/fa";
+import dynamic from 'next/dynamic';
 
 export default function UserInput({ onMessageSent, messages = [] }) {
   const [message, setMessage] = useState("");
@@ -15,8 +16,15 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasMicPermission, setHasMicPermission] = useState(false);
+  const recognitionRef = useRef(null);
+  const lastTranscriptRef = useRef('');
+  const timeoutRef = useRef(null);
+  const lastSpokenTextRef = useRef('');
   const dropRef = useRef(null);
+  const stopRecordingRef = useRef(() => {});
+  const startRecordingRef = useRef(() => {});
 
   const models = ["GPT-4.1","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
 
@@ -148,6 +156,14 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   const inputRef = useRef(null);
   
   useEffect(() => {
+    // Check for existing microphone permission
+    const savedPermission = localStorage.getItem('hasMicrophoneAccess');
+    if (savedPermission === 'true') {
+      setHasMicPermission(true);
+    }
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -163,6 +179,122 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       };
     }
   }, [message, selectedFile]);
+
+  // Initialize the recording functions with useRef to avoid circular dependencies
+  useEffect(() => {
+    stopRecordingRef.current = (shouldSend = false) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.onend = null;
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+        } catch (e) {
+          console.warn('Error stopping recognition:', e);
+        } finally {
+          if (shouldSend && lastSpokenTextRef.current) {
+            handleSend();
+            lastSpokenTextRef.current = '';
+          }
+          setIsRecording(false);
+        }
+      }
+    };
+
+    startRecordingRef.current = async () => {
+      if (typeof window === 'undefined') return;
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('Speech recognition is not supported in this browser');
+        return;
+      }
+
+      try {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        
+        recognitionRef.current.onresult = (event) => {
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + ' ';
+            }
+          }
+          
+          if (finalTranscript) {
+            const newText = finalTranscript.trim();
+            setMessage(prev => prev + (prev ? ' ' : '') + newText);
+            lastSpokenTextRef.current = newText;
+            
+            // Auto-send after 1.5 seconds of silence
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+            }
+            
+            timeoutRef.current = setTimeout(() => {
+              if (lastSpokenTextRef.current) {
+                stopRecordingRef.current(true);
+              }
+            }, 1500);
+          }
+        };
+        
+        recognitionRef.current.onerror = (event) => {
+          console.error('Speech recognition error', event.error);
+          stopRecordingRef.current();
+        };
+        
+        recognitionRef.current.start();
+        setIsRecording(true);
+        
+      } catch (err) {
+        console.error('Error starting recording:', err);
+        setHasMicPermission(false);
+      }
+    };
+  }, [handleSend]);
+
+  const toggleRecording = useCallback(async () => {
+    if (isRecording) {
+      // If we're stopping recording, send any pending text
+      stopRecordingRef.current(true);
+      return;
+    }
+
+    // Clear any previous state
+    lastSpokenTextRef.current = '';
+    
+    // Check if we already have permission
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop all tracks to release the microphone immediately
+      stream.getTracks().forEach(track => track.stop());
+      
+      setHasMicPermission(true);
+      await startRecordingRef.current();
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      setHasMicPermission(false);
+    }
+  }, [isRecording]);
+
+  const handleVoiceMessage = (message) => {
+    if (message.trim()) {
+      setMessage(prev => prev ? `${prev} ${message}` : message);
+      // Focus the input field after setting the message
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+    }
+  };
 
   return (
     <div
@@ -291,8 +423,12 @@ export default function UserInput({ onMessageSent, messages = [] }) {
         <div className="flex items-center gap-3 ml-auto relative">
 
           {/* Audio Button */}
-          <button className="text-gray-600 dark:text-white hover:text-black dark:hover:text-gray-300">
-            <FaMicrophone size={18} />
+          <button 
+            onClick={toggleRecording}
+            className={`p-1.5 rounded-full ${isRecording ? 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900' : hasMicPermission ? 'text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            aria-label={isRecording ? 'Stop recording' : hasMicPermission ? 'Start recording' : 'Request microphone access'}
+          >
+            {isRecording ? <MdStop size={20} /> : hasMicPermission ? <MdMic size={20} /> : <FaMicrophone size={18} />}
           </button>
 
           {/* Send Button */}
@@ -312,6 +448,19 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           </button>
         </div>
       </div>
+
+      {/* Recording indicator */}
+      {isRecording && (
+        <div className="absolute -top-8 left-0 right-0 text-center">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+            <span className="relative flex h-2 w-2 mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            Listening...
+          </span>
+        </div>
+      )}
     </div>
   );
 }
