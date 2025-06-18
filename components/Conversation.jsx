@@ -58,7 +58,7 @@ export default function Conversation({ messages = [], isThinking = false, onMess
               Start a conversation with OrbitAI
             </div>
           ) : (
-            <div className="space-y-2 py-1">
+            <div className="space-y-5 py-1">
               {messages.map((msg, idx) => (
                 msg && msg.role && (msg.content || msg.role !== 'assistant') && (
                   <div
@@ -67,10 +67,10 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                   >
                     <div
                       className={`
-                        max-w-[95%] rounded-lg py-1 px-2 text-md
+                        max-w-[95%] rounded-lg py-1 text-md
                         break-words overflow-x-auto
                         ${msg.role === 'user'
-                          ? 'bg-gray-400 dark:bg-gray-600 text-white rounded-tr-none'
+                          ? 'bg-gray-400 dark:bg-gray-600 text-white rounded-tr-none px-2 md:mr-1'
                           : 'text-gray-900 dark:text-gray-100 rounded-tl-none'}
                       `}
                       style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
@@ -91,7 +91,7 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                                       arrow.classList.toggle('rotate-180');
                                     }}>
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                      <span>Thinking</span>
+                                      <span>Reasoning</span>
                                       <span className="text-xs text-gray-500 dark:text-gray-400">
                                         ({isComplete ? 'click to expand' : 'processing...'})
                                       </span>
@@ -118,9 +118,12 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                           }
                           
                           return (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.content}
-                            </ReactMarkdown>
+                            //remove extra padding from user query
+                            <div className="[&>p]:my-0 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {msg.content}
+                              </ReactMarkdown>
+                            </div>
                           );
                         })()}
                       </div>

@@ -70,11 +70,16 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 </p>
               </div>
               
+              <Link href="/terms" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <RiShieldKeyholeLine className="mr-3 h-5 w-5 text-gray-400" />
+                Terms of Service
+              </Link>
+
               <Link href="/privacy" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <RiShieldKeyholeLine className="mr-3 h-5 w-5 text-gray-400" />
-                Privacy
+                Privacy Policy
               </Link>
-              
+
               <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <RiSettingsLine className="mr-3 h-5 w-5 text-gray-400" />
                 Settings

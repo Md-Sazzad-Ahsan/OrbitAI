@@ -53,6 +53,17 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
   };
 
   const handleNewChat = () => {
+    // Don't create a new chat if the latest chat is empty
+    const latestChat = conversations[0];
+    if (latestChat && (!latestChat.messages || latestChat.messages.length === 0)) {
+      // If the latest chat is empty, just select it instead of creating a new one
+      if (onSelectChat) {
+        onSelectChat(latestChat.id);
+      }
+      return;
+    }
+    
+    // Only create a new chat if the latest chat has messages
     const newConv = createNewConversation();
     refreshConversations();
     if (onSelectChat) {
@@ -127,13 +138,19 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
                       <div className="flex items-center justify-between">
                         <div
                           className="flex-1 min-w-0"
-                          onClick={() => handleSelectChat(chat.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (editingChatId !== chat.id) {
+                              handleSelectChat(chat.id);
+                            }
+                          }}
                         >
                           {editingChatId === chat.id ? (
                             <input
                               className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-800"
                               value={editingTitle}
                               autoFocus
+                              onClick={(e) => e.stopPropagation()}
                               onChange={e => setEditingTitle(e.target.value)}
                               onBlur={() => {
                                 const trimmed = editingTitle.trim();
@@ -142,6 +159,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
                                 setEditingTitle('');
                               }}
                               onKeyDown={e => {
+                                e.stopPropagation();
                                 if (e.key === 'Enter') {
                                   const trimmed = editingTitle.trim();
                                   handleEditChatTitle(chat.id, trimmed || 'Untitled Chat');
