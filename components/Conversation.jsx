@@ -5,6 +5,22 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UserInput from './UserInput';
 
+// Helper function to extract thinking and main content
+const extractThinkingContent = (content) => {
+  const thinkMatch = content.match(/<think>([\s\S]*?)(<\/think>|$)([\s\S]*)/);
+  if (!thinkMatch) return { hasThinking: false, thinkingContent: '', mainContent: content };
+  
+  const thinkingContent = thinkMatch[1] || '';
+  const mainContent = thinkMatch[3] || '';
+  
+  return {
+    hasThinking: true,
+    thinkingContent: thinkingContent.trim(),
+    mainContent: mainContent.trim(),
+    isComplete: thinkMatch[2] === '</think>'
+  };
+};
+
 // This component renders the conversation history. It is designed to work with
 // a parent component that handles real-time streaming. The `messages` prop
 // is expected to be updated incrementally, with the last message growing as
@@ -61,12 +77,9 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                     >
                       <div className="markdown-content w-full">
                         {(() => {
-                          const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>\s*([\s\S]*)/);
+                          const { hasThinking, thinkingContent, mainContent, isComplete } = extractThinkingContent(msg.content);
                           
-                          if (thinkMatch) {
-                            const thinkingContent = thinkMatch[1].trim();
-                            const mainContent = thinkMatch[2].trim();
-                            
+                          if (hasThinking) {
                             return (
                               <>
                                 <div className="mb-2 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
@@ -79,7 +92,9 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                                     }}>
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                                       <span>Thinking</span>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">(click to expand)</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        ({isComplete ? 'click to expand' : 'processing...'})
+                                      </span>
                                     </div>
                                     <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -91,11 +106,13 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                                     </ReactMarkdown>
                                   </div>
                                 </div>
-                                <div className="mt-2">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {mainContent}
-                                  </ReactMarkdown>
-                                </div>
+                                {mainContent && (
+                                  <div className="mt-2">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {mainContent}
+                                    </ReactMarkdown>
+                                  </div>
+                                )}
                               </>
                             );
                           }
