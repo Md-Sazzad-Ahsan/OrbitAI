@@ -9,21 +9,21 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
+        async get(name) {
+          return (await cookieStore).get(name)?.value
         },
-        set(name, value, options) {
+        async set(name, value, options) {
           try {
-            cookieStore.set({ name, value, ...options })
+            (await cookieStore).set({ name, value, ...options })
           } catch (error) {
-            // Handle error if needed
+            console.error('Error setting cookie:', error)
           }
         },
-        remove(name, options) {
+        async remove(name, options) {
           try {
-            cookieStore.set({ name, value: '', ...options })
+            (await cookieStore).set({ name, value: '', ...options })
           } catch (error) {
-            // Handle error if needed
+            console.error('Error removing cookie:', error)
           }
         },
       },

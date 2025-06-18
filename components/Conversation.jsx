@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UserInput from './UserInput';
@@ -59,10 +59,53 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                       `}
                       style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
                     >
-                      <div className="markdown-content">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
+                      <div className="markdown-content w-full">
+                        {(() => {
+                          const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>\s*([\s\S]*)/);
+                          
+                          if (thinkMatch) {
+                            const thinkingContent = thinkMatch[1].trim();
+                            const mainContent = thinkMatch[2].trim();
+                            
+                            return (
+                              <>
+                                <div className="mb-2 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 flex items-center justify-between cursor-pointer"
+                                    onClick={(e) => {
+                                      const content = e.currentTarget.nextElementSibling;
+                                      content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                                      const arrow = e.currentTarget.querySelector('svg');
+                                      arrow.classList.toggle('rotate-180');
+                                    }}>
+                                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                      <span>Thinking</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">(click to expand)</span>
+                                    </div>
+                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </div>
+                                  <div className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900" style={{ display: 'none' }}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {thinkingContent}
+                                    </ReactMarkdown>
+                                  </div>
+                                </div>
+                                <div className="mt-2">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {mainContent}
+                                  </ReactMarkdown>
+                                </div>
+                              </>
+                            );
+                          }
+                          
+                          return (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content}
+                            </ReactMarkdown>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
