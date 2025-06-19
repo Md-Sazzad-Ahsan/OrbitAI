@@ -19,6 +19,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   const [isThinking, setIsThinking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [hasMicPermission, setHasMicPermission] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const recognitionRef = useRef(null);
   const lastTranscriptRef = useRef('');
   const timeoutRef = useRef(null);
@@ -26,6 +27,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
   const dropRef = useRef(null);
   const stopRecordingRef = useRef(() => {});
   const startRecordingRef = useRef(() => {});
+  const abortControllerRef = useRef(null);
 
   const models = ["GPT-4.1","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
 
@@ -53,6 +55,13 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       timestamp: Date.now(),
     };
     onMessageSent([assistantMsg], true); // Show 'thinking' state
+    
+    // Set up abort controller for the request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    setIsStreaming(true);
 
     try {
       let apiEndpoint;
@@ -77,6 +86,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: conversationHistory }),
+        signal: abortControllerRef.current.signal
       });
 
       if (!response.ok || !response.body) {
@@ -124,14 +134,19 @@ export default function UserInput({ onMessageSent, messages = [] }) {
         }
       }
     } catch (error) {
-      console.error('Failed to get AI response:', error);
-      onMessageSent([
-        {
-          role: "assistant",
-          content: `Sorry, an error occurred: ${error.message}`,
-          timestamp: Date.now(),
-        },
-      ], false);
+      // Don't show error if the request was aborted
+      if (error.name !== 'AbortError') {
+        console.error('Failed to get AI response:', error);
+        onMessageSent([
+          {
+            role: "assistant",
+            content: `Sorry, an error occurred: ${error.message}`,
+            timestamp: Date.now(),
+          },
+        ], false);
+      }
+    } finally {
+      setIsStreaming(false);
     }
   };
   
@@ -260,7 +275,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
             });
           }
           
-          // Auto-send after 1.5 seconds of silence
+          // Auto-send after 2.5 seconds of silence
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
           }
@@ -269,7 +284,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
             if (lastSpokenTextRef.current) {
               stopRecordingRef.current(true);
             }
-          }, 1500);
+          }, 2500);
         };
         
         recognitionRef.current.onerror = (event) => {
@@ -452,27 +467,45 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           {/* Audio Button */}
           <button 
             onClick={toggleRecording}
-            className={`p-1.5 rounded-full ${isRecording ? 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900' : hasMicPermission ? 'text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            className={`p-1.5 rounded-full ${isRecording ? 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900' : hasMicPermission ? 'text-gray-50 hover:bg-blue-100 dark:hover:bg-gray-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             aria-label={isRecording ? 'Stop recording' : hasMicPermission ? 'Start recording' : 'Request microphone access'}
           >
-            {isRecording ? <MdStop size={20} /> : hasMicPermission ? <LuAudioLines size={20} /> : <LuAudioLines size={18} />}
+            {isRecording ? <MdStop size={20} /> : hasMicPermission ? <LuAudioLines size={20} /> : <LuAudioLines size={20} />}
           </button>
 
-          {/* Send Button */}
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-            className="focus:outline-none active:opacity-70 p-2 -mr-2"
-            aria-label="Send message"
-          >
-            <IoSend size={18} className="text-gray-700 dark:text-white hover:text-black dark:hover:text-gray-300" />
-          </button>
+          {/* Send/Stop Button */}
+          {isStreaming ? (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                if (abortControllerRef.current) {
+                  abortControllerRef.current.abort();
+                  abortControllerRef.current = null;
+                  setIsStreaming(false);
+                }
+              }}
+              className="focus:outline-none active:opacity-70 p-2 -mr-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+              aria-label="Stop generating"
+            >
+              <MdStop size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                handleSend();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleSend();
+              }}
+              className="focus:outline-none active:opacity-70 p-2 -mr-2"
+              aria-label="Send message"
+              disabled={isStreaming}
+            >
+              <IoSend size={20} className="text-gray-700 dark:text-white hover:text-black dark:hover:text-gray-300" />
+            </button>
+          )}
         </div>
       </div>
 
