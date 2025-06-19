@@ -3,6 +3,9 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import CopyButton from '@/components/CopyButton';
 import UserInput from './UserInput';
 
 // Helper function to extract thinking and main content
@@ -75,7 +78,7 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                       `}
                       style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
                     >
-                      <div className="markdown-content w-full">
+                      <div className="markdown-content w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_pre]:bg-gray-100 dark:[&_pre]:bg-gray-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:my-2 [&_pre]:max-w-[calc(100vw-2rem)] md:[&_pre]:max-w-[calc(100vw-50%)] [&_pre_code]:whitespace-pre [&_pre_code]:block [&_pre_code]:w-fit">
                         {(() => {
                           const { hasThinking, thinkingContent, mainContent, isComplete } = extractThinkingContent(msg.content);
                           
@@ -101,14 +104,62 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                                     </svg>
                                   </div>
                                   <div className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900" style={{ display: 'none' }}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    <ReactMarkdown 
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        code({node, inline, className, children, ...props}) {
+                                          const match = /language-(\w+)/.exec(className || '');
+                                          return !inline && match ? (
+                                            <div className="relative">
+                                              <CopyButton content={String(children).replace(/\n$/, '')} />
+                                              <SyntaxHighlighter
+                                                style={vscDarkPlus}
+                                                language={match[1]}
+                                                PreTag="div"
+                                                {...props}
+                                              >
+                                                {String(children).replace(/\n$/, '')}
+                                              </SyntaxHighlighter>
+                                            </div>
+                                          ) : (
+                                            <code className={className} {...props}>
+                                              {children}
+                                            </code>
+                                          );
+                                        }
+                                      }}
+                                    >
                                       {thinkingContent}
                                     </ReactMarkdown>
                                   </div>
                                 </div>
                                 {mainContent && (
                                   <div className="mt-2">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    <ReactMarkdown 
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        code({node, inline, className, children, ...props}) {
+                                          const match = /language-(\w+)/.exec(className || '');
+                                          return !inline && match ? (
+                                            <div className="relative">
+                                              <CopyButton content={String(children).replace(/\n$/, '')} />
+                                              <SyntaxHighlighter
+                                                style={vscDarkPlus}
+                                                language={match[1]}
+                                                PreTag="div"
+                                                {...props}
+                                              >
+                                                {String(children).replace(/\n$/, '')}
+                                              </SyntaxHighlighter>
+                                            </div>
+                                          ) : (
+                                            <code className={className} {...props}>
+                                              {children}
+                                            </code>
+                                          );
+                                        }
+                                      }}
+                                    >
                                       {mainContent}
                                     </ReactMarkdown>
                                   </div>
@@ -120,7 +171,31 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                           return (
                             //remove extra padding from user query
                             <div className="[&>p]:my-0 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  code({node, inline, className, children, ...props}) {
+                                    const match = /language-(\w+)/.exec(className || '');
+                                    return !inline && match ? (
+                                      <div className="syntax-highlight-container">
+                                        <CopyButton content={String(children).replace(/\n$/, '')} />
+                                        <SyntaxHighlighter
+                                          style={vscDarkPlus}
+                                          language={match[1]}
+                                          PreTag="div"
+                                          {...props}
+                                        >
+                                          {String(children).replace(/\n$/, '')}
+                                        </SyntaxHighlighter>
+                                      </div>
+                                    ) : (
+                                      <code className={className} {...props}>
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+                                }}
+                              >
                                 {msg.content}
                               </ReactMarkdown>
                             </div>
