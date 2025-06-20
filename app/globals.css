@@ -245,6 +245,41 @@ body, div, textarea, pre, code {
 }
 
 /* Ensure proper sizing and scrolling for code blocks */
+/* Ultra thin scrollbar for textarea */
+.ultra-thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9CA3AF transparent;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #9CA3AF;
+  border-radius: 1px;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #6B7280;
+}
+
+/* Ensure long URLs and text wrap properly */
+.markdown-content a {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* Keep existing pre styles but ensure they don't interfere with link wrapping */
 .markdown-content pre {
   width: 100%;
   overflow-x: auto;

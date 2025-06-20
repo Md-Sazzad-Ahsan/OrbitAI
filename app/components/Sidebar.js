@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
           lg:translate-x-0
           lg:fixed
         `}
-        style={{ width: isOpen ? '16rem' : '0' }}
+        style={{ width: isOpen ? '20rem' : '0' }}
         onClick={e => e.stopPropagation()}
       >
         {isOpen && (
@@ -156,7 +156,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
                         >
                           {editingChatId === chat.id ? (
                             <input
-                              className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-800"
+                              className="w-full px-2 py-2 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                               value={editingTitle}
                               autoFocus
                               onClick={(e) => e.stopPropagation()}

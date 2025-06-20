@@ -354,24 +354,34 @@ export default function UserInput({ onMessageSent, messages = [] }) {
       {/* File Preview */}
       {selectedFile && (
         <div className="inline-flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded bg-opacity-30">
-          📎 {selectedFile.name}
-          <button
-            onClick={() => setSelectedFile(null)}
-            className="text-gray-600 hover:text-red-500"
+        📎 {selectedFile.name}
+        <button
+          onClick={() => setSelectedFile(null)}
+          className="text-gray-600 hover:text-red-500"
           >
             <MdClose size={14} />
           </button>
-        </div>
+      </div>
       )}
 
       {/* Message Input */}
-      <input
+      <textarea
         ref={inputRef}
-        type="text"
-        className="w-full mb-1 text-sm px-2 py-2 outline-none bg-transparent dark:text-white rounded-md"
+        className="w-full mb-1 text-sm px-2 py-2 outline-none bg-transparent dark:text-white rounded-md resize-none ultra-thin-scrollbar"
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        rows="1"
+        style={{
+          minHeight: '40px',
+          maxHeight: '150px',
+          overflowY: 'auto'
+        }}
+        onInput={(e) => {
+          // Auto-resize the textarea based on content
+          e.target.style.height = 'auto';
+          e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+        }}
       />
 
       {/* Bottom Row */}
@@ -467,7 +477,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           {/* Audio Button */}
           <button 
             onClick={toggleRecording}
-            className={`p-1.5 rounded-full ${isRecording ? 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900' : hasMicPermission ? 'text-gray-50 hover:bg-blue-100 dark:hover:bg-gray-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            className={`p-1.5 rounded-full ${isRecording ? 'text-gray-500 bg-gray-400 dark:bg-gray-700' : hasMicPermission ? 'text-gray-50 hover:bg-blue-100 dark:hover:bg-gray-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             aria-label={isRecording ? 'Stop recording' : hasMicPermission ? 'Start recording' : 'Request microphone access'}
           >
             {isRecording ? <MdStop size={20} /> : hasMicPermission ? <LuAudioLines size={20} /> : <LuAudioLines size={20} />}
@@ -484,10 +494,10 @@ export default function UserInput({ onMessageSent, messages = [] }) {
                   setIsStreaming(false);
                 }
               }}
-              className="focus:outline-none active:opacity-70 p-2 -mr-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+              className="focus:outline-none active:opacity-70 border rounded-full p-1 -mr-2 text-gray-500 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-400"
               aria-label="Stop generating"
             >
-              <MdStop size={20} />
+              <MdStop size={24} />
             </button>
           ) : (
             <button 
@@ -499,7 +509,7 @@ export default function UserInput({ onMessageSent, messages = [] }) {
                 e.preventDefault();
                 handleSend();
               }}
-              className="focus:outline-none active:opacity-70 p-2 -mr-2"
+              className="focus:outline-none hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full active:opacity-70 p-2 -mr-2"
               aria-label="Send message"
               disabled={isStreaming}
             >
