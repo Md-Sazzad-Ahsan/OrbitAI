@@ -53,21 +53,13 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
   };
 
   const handleNewChat = () => {
-    // Don't create a new chat if the latest chat is empty
-    const latestChat = conversations[0];
-    if (latestChat && (!latestChat.messages || latestChat.messages.length === 0)) {
-      // If the latest chat is empty, just select it instead of creating a new one
-      if (onSelectChat) {
-        onSelectChat(latestChat.id);
-      }
-      return;
-    }
-    
-    // Only create a new chat if the latest chat has messages
+    // Always create a new chat when the button is clicked
     const newConv = createNewConversation();
     refreshConversations();
     if (onSelectChat) {
       onSelectChat(newConv.id);
+      // Update the URL with the new chatId
+      window.history.pushState({}, '', `/?chatId=${newConv.id}`);
     }
   };
 
