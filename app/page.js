@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Conversation from '@/components/Conversation';
-import { createNewConversation } from './utils/conversationStorage';
+import { createNewConversation, getConversation, saveConversation } from './utils/conversationStorage';
 
 export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
   const router = useRouter();
@@ -17,17 +17,43 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
 
   // Load personalization data
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedData = localStorage.getItem('orbitAI_personalization');
-      if (savedData) {
-        try {
-          setPersonalization(JSON.parse(savedData));
-        } catch (e) {
-          console.error('Error parsing personalization data:', e);
+    const loadPersonalization = () => {
+      if (typeof window !== 'undefined') {
+        const savedData = localStorage.getItem('orbitAI_personalization');
+        if (savedData) {
+          try {
+            const parsedData = JSON.parse(savedData);
+            setPersonalization(parsedData);
+            // Update the current conversation with the latest personalization
+            if (activeChatId) {
+              const currentConv = getConversation(activeChatId);
+              if (currentConv) {
+                currentConv.personalization = {
+                  name: parsedData.name || '',
+                  profession: parsedData.profession || '',
+                  traits: parsedData.traits || '',
+                  additionalInfo: parsedData.additionalInfo || ''
+                };
+                saveConversation(currentConv);
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing personalization data:', e);
+          }
         }
       }
-    }
-  }, []);
+    };
+    
+    loadPersonalization();
+    // Listen for changes to personalization
+    const handleStorageChange = (e) => {
+      if (e.key === 'orbitAI_personalization') {
+        loadPersonalization();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [activeChatId]);
 
   useEffect(() => {
     if (initialLoad.current) {

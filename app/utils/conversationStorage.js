@@ -45,17 +45,22 @@ export function createNewConversation() {
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   
   // Get personalization data from localStorage
-  let personalization = {};
-  try {
-    if (typeof window !== 'undefined') {
+  const getPersonalization = () => {
+    if (typeof window === 'undefined') return {};
+    
+    try {
       const savedData = localStorage.getItem('orbitAI_personalization');
       if (savedData) {
-        personalization = JSON.parse(savedData);
+        return JSON.parse(savedData);
       }
+    } catch (e) {
+      console.error('Error loading personalization data:', e);
     }
-  } catch (e) {
-    console.error('Error loading personalization data:', e);
-  }
+    return {};
+  };
+
+  // Get personalization data immediately
+  const personalization = getPersonalization();
 
   const conversation = {
     id,
@@ -70,6 +75,27 @@ export function createNewConversation() {
     createdAt: new Date().toISOString()
   };
   
+  // Save the conversation
   saveConversation(conversation);
+  
+  // Double-check and update personalization after a short delay to ensure we have the latest data
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      const updatedPersonalization = getPersonalization();
+      if (JSON.stringify(updatedPersonalization) !== JSON.stringify(personalization)) {
+        const updatedConversation = {
+          ...conversation,
+          personalization: {
+            name: updatedPersonalization.name || '',
+            profession: updatedPersonalization.profession || '',
+            traits: updatedPersonalization.traits || '',
+            additionalInfo: updatedPersonalization.additionalInfo || ''
+          }
+        };
+        saveConversation(updatedConversation);
+      }
+    }, 100);
+  }
+  
   return conversation;
 }
