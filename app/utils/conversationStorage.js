@@ -43,12 +43,33 @@ export function deleteConversation(id) {
 
 export function createNewConversation() {
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  
+  // Get personalization data from localStorage
+  let personalization = {};
+  try {
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('orbitAI_personalization');
+      if (savedData) {
+        personalization = JSON.parse(savedData);
+      }
+    }
+  } catch (e) {
+    console.error('Error loading personalization data:', e);
+  }
+
   const conversation = {
     id,
     title: 'New Chat',
     messages: [],
+    personalization: {
+      name: personalization.name || '',
+      profession: personalization.profession || '',
+      traits: personalization.traits || '',
+      additionalInfo: personalization.additionalInfo || ''
+    },
     createdAt: new Date().toISOString()
   };
+  
   saveConversation(conversation);
   return conversation;
 }

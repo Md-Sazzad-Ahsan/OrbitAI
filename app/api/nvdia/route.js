@@ -27,20 +27,42 @@ export async function POST(req) {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages, personalization } = await req.json();
 
     // Create stream controller
     const { stream, controller } = createStream();
     const encoder = new TextEncoder();
 
+    // Create system message with personalization if available
+    let systemMessage = {
+      role: "system",
+      content: "You are a helpful AI assistant."
+    };
+
+    // Add personalization to system message if available
+    if (personalization) {
+      const { name, profession, traits, additionalInfo } = personalization;
+      systemMessage.content = `You are a helpful AI assistant. You are chatting with ${name || 'the user'}, who is a ${profession || 'professional'}.
+
+Your behavior should follow these guidelines:
+${traits || 'Be helpful, accurate, and follow the user\'s instructions.'}`;
+      
+      if (additionalInfo) {
+        systemMessage.content += `
+
+Additional context about the user that you should consider:
+${additionalInfo}`;
+      }
+    }
+
     // Prepare payload for NVIDIA
     // NVIDIA expects array of messages with role & content
     const payload = {
       model: "meta/llama-4-maverick-17b-128e-instruct",
-      messages: messages,
-      max_tokens: 512,
-      temperature: 1.0,
-      top_p: 1.0,
+      messages: [systemMessage, ...messages],
+      max_tokens: 1024,
+      temperature: 0.7,
+      top_p: 0.9,
       frequency_penalty: 0.0,
       presence_penalty: 0.0,
       stream: true,

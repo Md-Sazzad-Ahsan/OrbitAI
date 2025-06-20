@@ -27,13 +27,32 @@ export async function POST(req) {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages, personalization } = await req.json();
     
+    // Create system message with personalization if available
+    let systemMessage = {
+      role: "system",
+      content: "You are a polite, gentle, and helpful multi-modal assistant. Always respond in clean Markdown format. Try to provide Latest information."
+    };
+
+    // Add personalization to system message if available
+    if (personalization) {
+      const { name, profession, traits, additionalInfo } = personalization;
+      systemMessage.content = `You are OrbitAI, an AI assistant. You are chatting with ${name || 'the user'}, who is a ${profession || 'professional'}.
+
+Your behavior should follow these guidelines:
+${traits || 'Be helpful, accurate, and follow the user\'s instructions.'}`;
+      
+      if (additionalInfo) {
+        systemMessage.content += `
+
+Additional context about the user that you should consider:
+${additionalInfo}`;
+      }
+    }
+
     const modifiedMessages = [
-      {
-        role: "system",
-        content: "You are a polite, gentle, and helpful multi-modal assistant. Always respond in clean Markdown format. Try to provide Latest information."
-      },
+      systemMessage,
       ...messages
     ];
 

@@ -13,6 +13,21 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const [activeChatId, setActiveChatId] = useState(chatId);
+  const [personalization, setPersonalization] = useState(null);
+
+  // Load personalization data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('orbitAI_personalization');
+      if (savedData) {
+        try {
+          setPersonalization(JSON.parse(savedData));
+        } catch (e) {
+          console.error('Error parsing personalization data:', e);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (initialLoad.current) {
@@ -152,6 +167,7 @@ export default function Home({ activeChatId: initialChatId, isSidebarOpen }) {
                 messages={messages} 
                 isThinking={isThinking} 
                 onMessageSent={handleMessageSent}
+                personalization={personalization}
               />
             </div>
           </div>

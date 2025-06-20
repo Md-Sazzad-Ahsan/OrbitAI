@@ -9,7 +9,7 @@ import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import { LuAudioLines } from "react-icons/lu";
 import dynamic from 'next/dynamic';
 
-export default function UserInput({ onMessageSent, messages = [] }) {
+export default function UserInput({ onMessageSent, messages = [], personalization }) {
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState("GPT-4.1");
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
@@ -82,10 +82,19 @@ export default function UserInput({ onMessageSent, messages = [] }) {
           apiEndpoint = '/api/openrouter';
       }
 
+      const requestBody = {
+        messages: conversationHistory
+      };
+
+      // Add personalization data if available
+      if (personalization) {
+        requestBody.personalization = personalization;
+      }
+
       const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: conversationHistory }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
       });
 

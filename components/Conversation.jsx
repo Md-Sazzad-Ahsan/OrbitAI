@@ -29,7 +29,7 @@ const extractThinkingContent = (content) => {
 // is expected to be updated incrementally, with the last message growing as
 // new data chunks arrive.
 
-export default function Conversation({ messages = [], isThinking = false, onMessageSent }) {
+export default function Conversation({ messages = [], isThinking = false, onMessageSent, personalization }) {
   const endRef = useRef(null);
 
   // Callback to scroll to the bottom of the conversation view
@@ -234,7 +234,11 @@ export default function Conversation({ messages = [], isThinking = false, onMess
       {/* Fixed input area at the bottom */}
       <div className="w-full pb-5 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
         <div className="max-w-3xl mx-auto">
-          <UserInput onMessageSent={onMessageSent} messages={messages} />
+          <UserInput 
+        onMessageSent={onMessageSent} 
+        messages={messages} 
+        personalization={personalization}
+      />
         </div>
       </div>
     </div>

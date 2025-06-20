@@ -31,7 +31,7 @@ export async function POST(req) {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages, personalization } = await req.json();
     
     // Create a stream for the response
     const { stream, controller } = createStream();
@@ -46,14 +46,35 @@ export async function POST(req) {
 
         console.log("Sending streaming request to HuggingFace Nebius API");
         
+        // Create system message with personalization if available
+        let systemMessage = {
+          role: "system",
+          content: "You are a polite, gentle, and helpful AI assistant. Always respond in short and clean Markdown format. Do not include thinking tags like <think>, </think>"
+        };
+
+        // Add personalization to system message if available
+        if (personalization) {
+          const { name, profession, traits, additionalInfo } = personalization;
+          systemMessage.content = `You are a helpful AI assistant. You are chatting with ${name || 'the user'}, who is a ${profession || 'professional'}.
+
+Your behavior should follow these guidelines:
+${traits || 'Be helpful, accurate, and follow the user\'s instructions.'}
+
+Always respond in short and clean Markdown format. Do not include thinking tags like <think>, </think>`;
+          
+          if (additionalInfo) {
+            systemMessage.content += `
+
+Additional context about the user that you should consider:
+${additionalInfo}`;
+          }
+        }
+        
         // Use streaming for faster response
         const completion = await client.chat.completions.create({
           model: "deepseek-ai/DeepSeek-R1-0528",
           messages: [
-            {
-              role: "system",
-              content: "You are a polite, gentle, and helpful AI assistant"+"Always respond in short and clean Markdown format."+"Do not include thinking tags like <think>, </think>"
-            },
+            systemMessage,
             ...messages
           ],
           stream: true,  // Enable streaming
