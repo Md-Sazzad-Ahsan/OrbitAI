@@ -4,16 +4,39 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { RiMenuLine, RiUserLine, RiSettingsLine, RiShieldKeyholeLine, RiLogoutBoxLine, RiLoginBoxLine, RiCloseLine } from "react-icons/ri";
 import { createClient } from '@/utils/supabase/client';
+import { savePersonalizationToLocalStorage } from '@/app/utils/systemPrompt';
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isPersonalizeModalOpen, setIsPersonalizeModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: 'Ahsan',
-    profession: 'Computer Engineer',
-    traits: 'When I say Casual then i want Chat gpt to respond casual answers .When i don\'t say anything then i want GPT to answer me formally. The answer should be in short and accurate ,when i say explain or describe then i want an step by step or line by line explanation or how that is happening, because i want to learn that'
+    name: '',
+    profession: '',
+    traits: 'When I say Casual then i want Chat gpt to respond casual answers. When I don\'t say anything then I want GPT to answer me formally. The answer should be in short and accurate. When I say explain or describe then I want a step by step or line by line explanation or how that is happening, because I want to learn that.',
+    additionalInfo: ''
   });
+
+  // Load saved preferences on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('orbitAI_personalization');
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          setFormData(prev => ({
+            name: parsedData.name || prev.name,
+            profession: parsedData.profession || prev.profession,
+            traits: parsedData.traits || prev.traits,
+            additionalInfo: parsedData.additionalInfo || ''
+          }));
+        } catch (e) {
+          console.error('Error loading saved preferences:', e);
+        }
+      }
+    }
+  }, []);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -179,9 +202,23 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 </label>
                 <textarea
                   id="traits"
-                  rows={6}
+                  rows={4}
                   value={formData.traits}
                   onChange={(e) => setFormData({...formData, traits: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Anything else OrbitAI should know about you?
+                </label>
+                <textarea
+                  id="additionalInfo"
+                  rows={4}
+                  placeholder="Any additional context, preferences, or information that would help OrbitAI assist you better"
+                  value={formData.additionalInfo}
+                  onChange={(e) => setFormData({...formData, additionalInfo: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -198,8 +235,21 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
               <button
                 type="button"
                 onClick={() => {
-                  // Here you would typically save the preferences
-                  console.log('Saving preferences:', formData);
+                  // Save preferences to localStorage
+                  const success = savePersonalizationToLocalStorage({
+                    name: formData.name,
+                    profession: formData.profession,
+                    traits: formData.traits,
+                    additionalInfo: formData.additionalInfo,
+                    lastUpdated: new Date().toISOString()
+                  });
+                  
+                  if (success) {
+                    console.log('Preferences saved successfully');
+                  } else {
+                    console.error('Failed to save preferences');
+                  }
+                  
                   setIsPersonalizeModalOpen(false);
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
