@@ -55,10 +55,10 @@ export default function Conversation({ messages = [], isThinking = false, onMess
   }, [scrollToBottom]);
 
   return (
-    <div className="w-full bg-transparent flex flex-col h-[calc(100vh-4rem)]">
+    <div className="relative h-[calc(100vh-4rem)] bg-transparent w-full">
       {/* Scrollable conversation area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto w-full py-4">
+      <div className="absolute inset-0 overflow-y-auto pb-24">
+        <div className="max-w-3xl mx-auto w-full pt-4 pb-12 px-4">
           {messages.length === 0 && !isThinking ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-4 mt-40">
               Start a conversation with OrbitAI
@@ -236,13 +236,13 @@ export default function Conversation({ messages = [], isThinking = false, onMess
       </div>
       
       {/* Fixed input area at the bottom */}
-      <div className="w-full pb-5 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
-        <div className="max-w-3xl mx-auto">
+      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 bg-opacity-50">
+        <div className="max-w-3xl mx-auto px-4 pb-4">
           <UserInput 
-        onMessageSent={onMessageSent} 
-        messages={messages} 
-        personalization={personalization}
-      />
+            onMessageSent={onMessageSent} 
+            messages={messages} 
+            personalization={personalization}
+          />
         </div>
       </div>
     </div>
