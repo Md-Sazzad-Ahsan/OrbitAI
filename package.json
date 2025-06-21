@@ -21,6 +21,7 @@
     "docx": "^9.5.0",
     "firebase": "^11.8.1",
     "framer-motion": "^12.16.0",
+    "katex": "^0.16.22",
     "langchain": "^0.3.26",
     "lucide-react": "^0.518.0",
     "moviedb-promise": "^4.0.7",
@@ -36,8 +37,10 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
     "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "swiper": "^11.2.8"
   },
   "devDependencies": {

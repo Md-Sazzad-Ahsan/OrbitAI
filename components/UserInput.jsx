@@ -31,6 +31,13 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
 
   const models = ["GPT-4.1","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
 
+  // Reset textarea height when message is cleared
+  useEffect(() => {
+    if (!message && inputRef.current) {
+      inputRef.current.style.height = '40px';
+    }
+  }, [message]);
+
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedFile) return;
@@ -391,6 +398,13 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
           e.target.style.height = 'auto';
           e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
         }}
+        onKeyDown={(e) => {
+          // Handle Enter key press without shift
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
       />
 
       {/* Bottom Row */}
@@ -501,6 +515,11 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
                   abortControllerRef.current.abort();
                   abortControllerRef.current = null;
                   setIsStreaming(false);
+                  // Notify parent that streaming has been stopped
+                  const lastMessage = messages[messages.length - 1];
+                  if (lastMessage?.role === 'assistant') {
+                    onMessageSent([{ ...lastMessage }], false);
+                  }
                 }
               }}
               className="focus:outline-none active:opacity-70 border rounded-full p-1 -mr-2 text-gray-500 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-400"

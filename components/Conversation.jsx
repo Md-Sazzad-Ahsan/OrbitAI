@@ -3,6 +3,9 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import CopyButton from '@/components/CopyButton';
@@ -172,7 +175,8 @@ export default function Conversation({ messages = [], isThinking = false, onMess
                             //remove extra padding from user query
                             <div className="[&>p]:my-0 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
                               <ReactMarkdown 
-                                remarkPlugins={[remarkGfm]}
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
                                 components={{
                                   code({node, inline, className, children, ...props}) {
                                     const match = /language-(\w+)/.exec(className || '');
