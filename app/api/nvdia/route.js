@@ -75,6 +75,21 @@ ${additionalInfo}`;
     };
 
     (async () => {
+      let controllerClosed = false;
+      
+      const safeCloseController = () => {
+        if (controllerClosed) return;
+        controllerClosed = true;
+        try {
+          controller.close();
+        } catch (e) {
+          // Ignore errors when closing an already closed controller
+          if (!e.message.includes('already closed')) {
+            console.error('Error closing controller:', e);
+          }
+        }
+      };
+
       try {
         const response = await axios.post(
           "https://integrate.api.nvidia.com/v1/chat/completions",
@@ -85,36 +100,48 @@ ${additionalInfo}`;
           }
         );
 
-        // Listen to data stream chunks
         response.data.on("data", (chunk) => {
-          const textChunk = chunk.toString();
-
-          // NVIDIA streams SSE formatted data, forward as-is
-          controller.enqueue(encoder.encode(textChunk));
-
-          // Optionally parse and stop if [DONE] received
-          if (textChunk.includes("[DONE]")) {
-            controller.close();
+          if (controllerClosed) return;
+          
+          try {
+            const textChunk = chunk.toString();
+            controller.enqueue(encoder.encode(textChunk));
+            
+            if (textChunk.includes("[DONE]")) {
+              safeCloseController();
+            }
+          } catch (e) {
+            console.error('Error processing chunk:', e);
+            safeCloseController();
           }
         });
 
-        response.data.on("end", () => {
-          controller.close();
-        });
-
+        response.data.on("end", safeCloseController);
         response.data.on("error", (err) => {
           console.error("Stream error:", err);
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-          );
-          controller.close();
+          if (!controllerClosed) {
+            try {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+              );
+            } catch (e) {
+              console.error('Error enqueuing error message:', e);
+            }
+            safeCloseController();
+          }
         });
       } catch (err) {
         console.error("NVIDIA stream request error:", err);
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-        );
-        controller.close();
+        if (!controllerClosed) {
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+            );
+          } catch (e) {
+            console.error('Error enqueuing error message:', e);
+          }
+          safeCloseController();
+        }
       }
     })();
 

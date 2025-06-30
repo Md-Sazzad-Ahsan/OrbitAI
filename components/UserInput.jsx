@@ -8,6 +8,7 @@ import { MdImage, MdPictureAsPdf, MdDescription, MdClose, MdMic, MdStop } from "
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import { LuAudioLines } from "react-icons/lu";
 import dynamic from 'next/dynamic';
+import DescribeImg from './DescribeImg';
 
 export default function UserInput({ onMessageSent, messages = [], personalization }) {
   const [message, setMessage] = useState("");
@@ -15,6 +16,8 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [attachDropdownOpen, setAttachDropdownOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imageDescription, setImageDescription] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -29,7 +32,7 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
   const startRecordingRef = useRef(() => {});
   const abortControllerRef = useRef(null);
 
-  const models = ["GPT-4.1","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
+  const models = ["GPT-4.1","Gemma 3","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
 
   // Reset textarea height when message is cleared
   useEffect(() => {
@@ -42,9 +45,35 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedFile) return;
 
+    // Prepare the message content
+    let messageContent = trimmedMessage;
+    
+    // If there's an image and description, include them in the API call
+    const apiBody = { messages: [] };
+    
+    if (selectedFile?.type === 'image' && imageDescription) {
+      // For the API call, include the image description
+      apiBody.messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: trimmedMessage },
+          { type: "text", text: `Image description: ${imageDescription}` }
+        ]
+      });
+    } else {
+      // Regular text message for the API
+      apiBody.messages.push({
+        role: "user",
+        content: trimmedMessage
+      });
+    }
+
+    // For the UI, just show the message and image name
     const userMsg = {
       role: "user",
-      content: trimmedMessage,
+      content: selectedFile && selectedFile.type === 'image' 
+        ? `${trimmedMessage} [Image: ${selectedFile.name}]` 
+        : trimmedMessage,
       timestamp: Date.now(),
     };
 
@@ -76,6 +105,9 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
         case 'GPT-4.1':
           apiEndpoint = '/api/nvdia-gemma';
           break;
+        case 'Gemma 3':
+          apiEndpoint = '/api/openrouter/gemma';
+          break;
         case 'DeepSeek-V3':
           apiEndpoint = '/api/nvdia';
           break;
@@ -89,10 +121,14 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
           apiEndpoint = '/api/openrouter';
       }
 
-      const requestBody = {
-        messages: conversationHistory
-      };
-
+      // Prepare the request body
+      const requestBody = apiBody;
+      
+      // Add conversation history and personalization if not already set by image handling
+      if (!requestBody.messages || requestBody.messages.length === 0) {
+        requestBody.messages = conversationHistory;
+      }
+      
       // Add personalization data if available
       if (personalization) {
         requestBody.personalization = personalization;
@@ -172,6 +208,19 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
     if (file) {
       setSelectedFile({ name: file.name, type });
       setAttachDropdownOpen(false);
+      
+      if (type === 'image') {
+        // Switch to Gemma 3 for images
+        setSelectedModel('Gemma 3');
+        // Show popup message
+        alert('Gemma only for Image');
+        // Set the file name in the input
+        setMessage(prev => prev ? `${prev} ${file.name}` : file.name);
+        setImageFile(file);
+      }
+      
+      // Reset the file input to allow selecting the same file again
+      e.target.value = null;
     }
   };
 
@@ -369,15 +418,30 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
     >
       {/* File Preview */}
       {selectedFile && (
-        <div className="inline-flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded bg-opacity-30">
-        📎 {selectedFile.name}
-        <button
-          onClick={() => setSelectedFile(null)}
-          className="text-gray-600 hover:text-red-500"
-          >
-            <MdClose size={14} />
-          </button>
-      </div>
+        <div className="mb-2">
+          <div className="inline-flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded bg-opacity-30">
+            📎 {selectedFile.name}
+            <button
+              onClick={() => {
+                setSelectedFile(null);
+                setImageFile(null);
+                setImageDescription('');
+              }}
+              className="text-gray-600 hover:text-red-500"
+            >
+              <MdClose size={14} />
+            </button>
+          </div>
+          {selectedFile.type === 'image' && imageFile && (
+            <div className="mt-2">
+              <DescribeImg 
+                file={imageFile}
+                onDescriptionReady={(desc) => setImageDescription(desc)}
+                onError={(error) => console.error('Image processing error:', error)}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Message Input */}

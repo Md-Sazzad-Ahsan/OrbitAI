@@ -32,7 +32,7 @@ export async function POST(req) {
     // Create system message with personalization if available
     let systemMessage = {
       role: "system",
-      content: "You are a polite, gentle, and helpful multi-modal assistant. Always respond in clean Markdown format. Try to provide Latest information."
+      content: "You are a polite, gentle, and helpful multi-modal assistant.Try to provide Latest information."
     };
 
     // Add personalization to system message if available
@@ -64,7 +64,7 @@ ${additionalInfo}`;
             messages: modifiedMessages,
             model: "deepseek/deepseek-chat-v3:free",
             stream: true,
-            max_tokens: 1000,
+            max_tokens: 1024,
             temperature: 0.5
           });
 
