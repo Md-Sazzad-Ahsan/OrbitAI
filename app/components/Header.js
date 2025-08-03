@@ -99,16 +99,29 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 </p>
               </div>
               
-              <Link href="/terms" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Link 
+                href="/terms" 
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 <RiShieldKeyholeLine className="mr-3 h-5 w-5 text-gray-400" />
                 Terms of Service
               </Link>
 
-              <Link href="/privacy" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Link 
+                href="/privacy" 
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 <RiShieldKeyholeLine className="mr-3 h-5 w-5 text-gray-400" />
                 Privacy Policy
               </Link>
-              <Link href="/help" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              
+              <Link 
+                href="/help" 
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 <RiShieldKeyholeLine className="mr-3 h-5 w-5 text-gray-400" />
                 Help Center
               </Link>
@@ -123,21 +136,33 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 <RiSettingsLine className="mr-3 h-5 w-5 text-gray-400" />
                 Personalize
               </button>
-              <Link href="/setting" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              
+              <Link 
+                href="/setting" 
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 <RiSettingsLine className="mr-3 h-5 w-5 text-gray-400" />
                 Settings
               </Link>
               
               {user ? (
                 <button
-                  onClick={handleSignOut}
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    handleSignOut();
+                  }}
                   className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <RiLogoutBoxLine className="mr-3 h-5 w-5" />
                   Log out
                 </button>
               ) : (
-                <Link href="/login" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Link 
+                  href="/login" 
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
                   <RiLoginBoxLine className="mr-3 h-5 w-5 text-gray-400" />
                   Log in
                 </Link>

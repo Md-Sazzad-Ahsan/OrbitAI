@@ -214,7 +214,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onSelectChat, activeChatId }) => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">No chats yet.</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">No chats yet.Sign in to create new chats</div>
                 )}
               </div>
             </div>

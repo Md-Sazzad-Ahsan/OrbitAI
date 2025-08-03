@@ -48,7 +48,7 @@ async function getAvailableModel() {
     
     if (!availableModel) {
       const installedList = installedModels.length > 0 
-        ? `Installed models: ${installedModels.join(', ')}` 
+        ? `My Models: ${installedModels.join(', ')}` 
         : 'No models installed';
       throw new Error(
         `None of the preferred models are installed. ${installedList}.\n` +
@@ -141,7 +141,7 @@ export async function POST(request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Optimized parameters for faster responses
+          // Optimized parameters for better responses
           const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
             method: 'POST',
             headers: {
@@ -155,46 +155,70 @@ export async function POST(request) {
                 temperature: 0.7,     // Balanced temperature for natural responses
                 top_p: 0.9,          // Broader sampling for better quality
                 top_k: 40,           // Limit candidates to prevent code generation
-                num_ctx: 2048,       // Balanced context window
-                num_predict: 500,     // Shorter responses
+                num_ctx: 4096,       // Increased context window for longer responses
+                num_predict: 2048,    // Increased max tokens for longer responses
                 repeat_penalty: 1.1,  // Prevent repetition
                 num_thread: 4,        // Use available CPU threads
-                stop: ['\nUser:', '\n\n', '###', '```'], // Stop on code blocks too
-                mirostat: 1,          // Use mirostat 1 for more controlled responses
-                mirostat_tau: 4.0,    // Lower tau for more focused responses
-                mirostat_eta: 0.05,   // Slower learning rate
+                stop: ['\nUser:', '###', '```'], // Reduced stop tokens
+                mirostat: 0,          // Disable mirostat for more reliable streaming
               },
             }),
           });
 
           if (!response.ok) {
             const error = await response.text();
+            console.error('Ollama API error:', error);
             throw new Error(`Ollama API error: ${error}`);
           }
 
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
+          let contentBuffer = '';
+
+          const processChunk = (chunk) => {
+            try {
+              // Skip empty chunks
+              if (!chunk || chunk.trim() === '') return null;
+              
+              const data = JSON.parse(chunk);
+              return data.message?.content || data.response || '';
+            } catch (e) {
+              console.error('Error parsing chunk:', chunk, e);
+              return null;
+            }
+          };
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
+            // Decode the chunk and add to buffer
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-
+            
+            // Process complete lines
+            const lines = buffer.split('\n').filter(line => line.trim() !== '');
+            buffer = ''; // Reset buffer as we're processing all lines
+            
             for (const line of lines) {
-              if (line.trim() === '') continue;
+              if (line.trim() === 'data: [DONE]') {
+                continue;
+              }
+              
               try {
-                const chunk = JSON.parse(line);
-                if (chunk.message?.content) {
+                // Remove 'data: ' prefix if present
+                const jsonStr = line.startsWith('data: ') ? line.slice(6) : line;
+                const content = processChunk(jsonStr);
+                
+                if (content) {
+                  contentBuffer += content;
+                  // Send the accumulated content
                   controller.enqueue(
-                    `data: ${JSON.stringify({ reply: chunk.message.content })}\n\n`
+                    `data: ${JSON.stringify({ reply: content })}\n\n`
                   );
                 }
               } catch (e) {
-                console.error('Error parsing Ollama response:', e);
+                console.error('Error processing line:', line, e);
               }
             }
           }

@@ -32,7 +32,7 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
   const startRecordingRef = useRef(() => {});
   const abortControllerRef = useRef(null);
 
-  const [models, setModels] = useState(["GPT-4.1","Gemma 3","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"]);
+  const [models, setModels] = useState(["GPT-4.1","Gemma 3","DeepSeek-V3", "DeepSeek-R1", "DS-R1-0528"]);
   const [localModels, setLocalModels] = useState([]);
   const [useLocalModel, setUseLocalModel] = useState(false);
   
@@ -42,12 +42,16 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
       const savedSettings = localStorage.getItem('ollamaSettings');
       if (savedSettings) {
         const { useLocalModels, selectedModel } = JSON.parse(savedSettings);
-        if (useLocalModels && selectedModel) {
+        if (useLocalModels) {
           setUseLocalModel(true);
-          // Add 'Installed Models' to the beginning of the models list if not already present
+          // Add 'My Models' to the beginning of the models list if not already present
           setModels(prev => 
-            prev.includes('Installed Models') ? prev : ['Installed Models', ...prev]
+            prev.includes('My Models') ? prev : ['My Models', ...prev]
           );
+          // If 'My Models' is selected in settings, set it as the selected model
+          if (selectedModel) {
+            setSelectedModel('My Models');
+          }
         }
       }
     } catch (error) {
@@ -65,6 +69,29 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedFile) return;
+
+    // Determine if we're using local models
+    let modelToUse = selectedModel;
+    let isUsingLocalModel = selectedModel === 'My Models';
+    
+    // If 'My Models' is selected, get the actual model from localStorage
+    if (isUsingLocalModel) {
+      try {
+        const savedSettings = localStorage.getItem('ollamaSettings');
+        if (savedSettings) {
+          const { selectedModel: savedModel } = JSON.parse(savedSettings);
+          if (savedModel) {
+            modelToUse = savedModel;
+          } else {
+            // Fallback to first model if none selected
+            modelToUse = models[0] || 'llama2';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading model from settings:', error);
+        modelToUse = models[0] || 'llama2';
+      }
+    }
 
     // Prepare the message content
     let messageContent = trimmedMessage;
@@ -122,27 +149,21 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
 
     try {
       let apiEndpoint;
-      switch (selectedModel) {
-        case 'Installed Models':
-          apiEndpoint = '/api/ollama';
-          break;
-        case 'GPT-4.1':
-          apiEndpoint = '/api/nvdia-gemma';
-          break;
-        case 'Gemma 3':
-          apiEndpoint = '/api/openrouter/gemma';
-          break;
-        case 'DeepSeek-V3':
-          apiEndpoint = '/api/nvdia';
-          break;
-        case 'DeepSeek-R1':
-          apiEndpoint = '/api/huggingface';
-          break;
-        case 'DeepSeek-R1-0528':
-          apiEndpoint = '/api/openrouter';
-          break;
-        default:
-          apiEndpoint = '/api/openrouter';
+      const modelEndpoints = {
+        'GPT-4.1': '/api/nvdia-gemma',
+        'Gemma 3': '/api/openrouter/gemma',
+        'DeepSeek-V3': '/api/nvdia',
+        'DeepSeek-R1': '/api/huggingface',
+        'DS-R1-0528': '/api/openrouter'
+      };
+
+      if (isUsingLocalModel) {
+        // For local models, use the Ollama endpoint and include the model name
+        apiEndpoint = '/api/ollama';
+        apiBody.model = modelToUse; // Add the model to the request body
+      } else {
+        // For other models, use the appropriate endpoint
+        apiEndpoint = modelEndpoints[selectedModel] || '/api/openrouter';
       }
 
       // Prepare the request body

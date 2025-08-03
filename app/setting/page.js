@@ -180,8 +180,9 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 mt-10 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Settings</h1>
+    <div className="p-8">
+   <div className='max-w-7xl mx-auto p-6 mt-10 bg-white dark:bg-gray-800 rounded-lg shadow'>
+   <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Settings</h1>
       
       <div className="space-y-8">
         {/* Local Models Toggle */}
@@ -250,7 +251,7 @@ export default function Settings() {
                 </svg>
               </div>
             </div>
-            {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <div className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</div>}
             {selectedModel && (
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Selected: {selectedModel}
@@ -259,6 +260,7 @@ export default function Settings() {
           </div>
         )}
       </div>
+   </div>
     </div>
   );
 }

@@ -62,7 +62,7 @@ ${additionalInfo}`;
         try {
           const stream = await openai.chat.completions.create({
             messages: modifiedMessages,
-            model: "deepseek/deepseek-chat-v3:free",
+            model: "deepseek/deepseek-r1-0528:free",
             stream: true,
             max_tokens: 1024,
             temperature: 0.5

@@ -105,10 +105,10 @@ export async function POST(req) {
     // Add personalization to system message if available
     if (parsedPersonalization) {
       const { name, profession, traits, additionalInfo } = parsedPersonalization;
-      systemMessage.content = `You are OrbitAI, an AI assistant that can understand images. You are chatting with ${name || 'the user'}, who is a ${profession || 'professional'}.
+      systemMessage.content = `You are OrbitAI, an AI assistant. You are chatting with ${name || 'the user'}, who is a ${profession || 'professional'}.
 
 Your behavior should follow these guidelines:
-${traits || 'Be helpful, accurate, and follow the user\'s instructions when analyzing images.'}`;
+${traits || 'Be helpful, accurate, and follow the user\'s instructions when analyzing chat,information, and images.'}`;
       
       if (additionalInfo) {
         systemMessage.content += `
