@@ -13,7 +13,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const [formData, setFormData] = useState({
     name: '',
     profession: '',
-    traits: 'When I say Casual then i want Chat gpt to respond casual answers. When I don\'t say anything then I want GPT to answer me formally. The answer should be in short and accurate. When I say explain or describe then I want a step by step or line by line explanation or how that is happening, because I want to learn that.',
+    traits: 'When I say Casual then i want you to respond casual answers. When I don\'t say anything then I want you to answer me formally. The answer should be in short and accurate. When I say explain or describe then I want a step by step or line by line explanation or how that is happening, because I want to learn that.',
     additionalInfo: ''
   });
 
@@ -76,7 +76,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
           )}
           <Link href="/" className="flex items-center">
             <span className="text-2xl font-bold text-gray-800 dark:text-white">
-              OrbitAI
+              MyGPT
             </span>
           </Link>
         </div>
@@ -123,7 +123,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 <RiSettingsLine className="mr-3 h-5 w-5 text-gray-400" />
                 Personalize
               </button>
-              <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Link href="/setting" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <RiSettingsLine className="mr-3 h-5 w-5 text-gray-400" />
                 Settings
               </Link>

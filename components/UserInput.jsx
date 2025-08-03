@@ -32,7 +32,28 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
   const startRecordingRef = useRef(() => {});
   const abortControllerRef = useRef(null);
 
-  const models = ["GPT-4.1","Gemma 3","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"];
+  const [models, setModels] = useState(["GPT-4.1","Gemma 3","DeepSeek-V3", "DeepSeek-R1", "DeepSeek-R1-0528"]);
+  const [localModels, setLocalModels] = useState([]);
+  const [useLocalModel, setUseLocalModel] = useState(false);
+  
+  // Check for local models and settings on component mount
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('ollamaSettings');
+      if (savedSettings) {
+        const { useLocalModels, selectedModel } = JSON.parse(savedSettings);
+        if (useLocalModels && selectedModel) {
+          setUseLocalModel(true);
+          // Add 'Installed Models' to the beginning of the models list if not already present
+          setModels(prev => 
+            prev.includes('Installed Models') ? prev : ['Installed Models', ...prev]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error loading Ollama settings:', error);
+    }
+  }, []);
 
   // Reset textarea height when message is cleared
   useEffect(() => {
@@ -102,6 +123,9 @@ export default function UserInput({ onMessageSent, messages = [], personalizatio
     try {
       let apiEndpoint;
       switch (selectedModel) {
+        case 'Installed Models':
+          apiEndpoint = '/api/ollama';
+          break;
         case 'GPT-4.1':
           apiEndpoint = '/api/nvdia-gemma';
           break;

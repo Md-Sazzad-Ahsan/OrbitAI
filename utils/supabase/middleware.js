@@ -57,8 +57,9 @@ export async function updateSession(request) {
   // Refresh session if expired - required for Server Components
   const { data: { session } } = await supabase.auth.getSession()
 
-  // If the user is not signed in and the current path is not /login, redirect to /login
-  if (!session && request.nextUrl.pathname !== '/login') {
+  // If the user is not signed in and the current path is not /login or /, redirect to /login
+  const publicPaths = ['/login', '/']
+  if (!session && !publicPaths.includes(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectedFrom', request.nextUrl.pathname)

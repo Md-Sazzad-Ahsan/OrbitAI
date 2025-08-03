@@ -55,13 +55,13 @@ export default function Conversation({ messages = [], isThinking = false, onMess
   }, [scrollToBottom]);
 
   return (
-    <div className="relative h-[calc(100vh-4rem)] bg-transparent w-full">
+    <div className="grid grid-rows-[1fr_auto] h-[calc(100vh-4rem)] bg-transparent w-full">
       {/* Scrollable conversation area */}
-      <div className="absolute inset-0 overflow-y-auto pb-24">
-        <div className="max-w-3xl mx-auto w-full pt-4 pb-12 px-4">
+      <div className="overflow-y-auto">
+        <div className="max-w-3xl mx-auto w-full pt-4 pb-4 px-4">
           {messages.length === 0 && !isThinking ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-4 mt-40">
-              Start a conversation with OrbitAI
+              Start a conversation with MyGPT
             </div>
           ) : (
             <div className="space-y-5 py-1">
@@ -236,8 +236,8 @@ export default function Conversation({ messages = [], isThinking = false, onMess
       </div>
       
       {/* Fixed input area at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 bg-opacity-50">
-        <div className="max-w-3xl mx-auto px-4 pb-4">
+      <div className="bg-white dark:bg-gray-900 bg-opacity-50">
+        <div className="max-w-4xl mx-auto px-4 pb-4">
           <UserInput 
             onMessageSent={onMessageSent} 
             messages={messages} 
