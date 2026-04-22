@@ -34,7 +34,7 @@ const PROVIDERS = {
     formatResponse: (chunk) => chunk.choices[0]?.delta?.content || '',
   },
   huggingface: {
-    baseURL: "https://router.huggingface.co/nebius/v1",
+    baseURL: "https://router.huggingface.co/v1",
     envKey: "HUGGINGFACE_API_KEY",
     headers: {},
     formatRequest: (messages, options) => ({
