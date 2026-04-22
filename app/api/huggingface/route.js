@@ -40,7 +40,7 @@ export async function POST(req) {
     (async () => {
       try {
         const client = new OpenAI({
-          baseURL: "https://router.huggingface.co/nebius/v1",
+          baseURL: "https://router.huggingface.co/v1",
           apiKey: process.env.HUGGINGFACE_API_KEY,
         });
 
@@ -72,7 +72,7 @@ ${additionalInfo}`;
         
         // Use streaming for faster response
         const completion = await client.chat.completions.create({
-          model: "deepseek-ai/DeepSeek-R1-0528",
+          model: "google/gemma-4-31B-it:novita",
           messages: [
             systemMessage,
             ...messages
